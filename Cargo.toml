@@ -1,0 +1,51 @@
+[package]
+name = "texforge"
+version = "0.1.0"
+edition = "2021"
+rust-version = "1.75"
+description = "Self-contained LaTeX to PDF compiler CLI"
+license = "MIT"
+repository = "https://github.com/jheisonmb/texforge"
+keywords = ["latex", "pdf", "compiler", "cli"]
+categories = ["command-line-utilities", "development-tools"]
+
+[[bin]]
+name = "texforge"
+path = "src/main.rs"
+
+[dependencies]
+# CLI argument parsing
+clap = { version = "4.6", features = ["derive"] }
+
+# Error handling
+anyhow = "1.0"
+thiserror = "2.0"
+
+# Serialization (for project.toml, template.toml)
+serde = { version = "1.0", features = ["derive"] }
+toml = "1.1"
+
+# File system operations
+walkdir = "2.5"
+
+# Home directory resolution
+dirs = "6.0"
+
+[dev-dependencies]
+tempfile = "3.8"
+
+[lints.clippy]
+needless_pass_by_value = "warn"
+redundant_closure = "warn"
+redundant_clone = "warn"
+large_enum_variant = "warn"
+manual_let_else = "warn"
+semicolon_if_nothing_returned = "warn"
+inconsistent_struct_constructor = "warn"
+doc_markdown = "warn"
+
+[profile.release]
+opt-level = 3
+lto = true
+codegen-units = 1
+strip = true

@@ -1,0 +1,14 @@
+/target
+Cargo.lock
+*.swp
+*.swo
+*~
+.DS_Store
+.env
+.vscode/
+.idea/
+*.log
+.kiro/
+.agents/
+.idea/
+texforge-spec.md
