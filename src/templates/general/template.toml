@@ -1,0 +1,14 @@
+[metadata]
+nombre = "general"
+descripcion = "Documento genérico — artículo con estructura mínima"
+idioma = "es"
+tipo = "article"
+
+[variables]
+requeridas = ["titulo", "autor"]
+opcionales = []
+
+[compatibilidad]
+mermaid = false
+graphviz = false
+bibliografia = "bibtex"

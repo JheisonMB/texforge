@@ -2,30 +2,45 @@
 
 use anyhow::Result;
 
-/// List available templates
+use crate::templates;
+
+/// List available templates.
 pub fn list() -> Result<()> {
-    println!("Available templates:");
-    println!("TODO: List templates from local cache");
+    let cached = templates::list_cached()?;
+    if cached.is_empty() {
+        println!("No templates installed locally.");
+        println!("The 'general' template is always available (built-in).");
+    } else {
+        println!("Installed templates:");
+        for name in &cached {
+            println!("  - {}", name);
+        }
+    }
     Ok(())
 }
 
-/// Add a template from URL or registry
-pub fn add(source: &str) -> Result<()> {
-    println!("Adding template from: {}", source);
-    println!("TODO: Download and validate template");
+/// Add a template from the registry.
+pub fn add(name: &str) -> Result<()> {
+    println!("Downloading template '{}'...", name);
+    templates::download(name)?;
+    println!("✅ Template '{}' installed", name);
     Ok(())
 }
 
-/// Remove a template
+/// Remove a template from local cache.
 pub fn remove(name: &str) -> Result<()> {
-    println!("Removing template: {}", name);
-    println!("TODO: Remove template from local cache");
+    let path = templates::remove_cached(name)?;
+    println!("✅ Removed template '{}' ({})", name, path.display());
     Ok(())
 }
 
-/// Validate template compatibility
+/// Validate template compatibility.
 pub fn validate(name: &str) -> Result<()> {
-    println!("Validating template: {}", name);
-    println!("TODO: Check template compatibility with internal engine");
+    let resolved = templates::resolve(name)?;
+    if resolved.files.contains_key("template.toml") {
+        println!("✅ Template '{}' is valid", name);
+    } else {
+        anyhow::bail!("Template '{}' is missing template.toml", name);
+    }
     Ok(())
 }

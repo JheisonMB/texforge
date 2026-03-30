@@ -1,7 +1,7 @@
 //! texforge — Self-contained LaTeX to PDF compiler CLI.
 //!
 //! A command-line tool that compiles LaTeX documents to PDF without requiring
-//! TeX Live, MiKTeX, or any external LaTeX distribution.
+//! TeX Live, `MiKTeX`, or any external LaTeX distribution.
 
 mod cli;
 mod commands;
@@ -10,6 +10,7 @@ mod domain;
 mod error;
 mod formatter;
 mod linter;
+mod templates;
 mod utils;
 
 use anyhow::Result;
