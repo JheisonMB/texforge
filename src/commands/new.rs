@@ -1,6 +1,6 @@
 //! `texforge new` command implementation.
 
-use std::path::Path;
+use std::path::{Component, Path};
 
 use anyhow::{Context, Result};
 
@@ -8,6 +8,8 @@ use crate::templates;
 
 /// Create a new project from a template.
 pub fn execute(name: &str, template: Option<&str>) -> Result<()> {
+    validate_project_name(name)?;
+
     let template_name = template.unwrap_or("general");
     let project_dir = Path::new(name);
 
@@ -57,6 +59,45 @@ bibliografia = "bib/references.bib"
     println!();
     println!("  cd {}", name);
     println!("  texforge build");
+
+    Ok(())
+}
+
+/// Validate project name: no empty, no path traversal, no special chars.
+fn validate_project_name(name: &str) -> Result<()> {
+    if name.is_empty() {
+        anyhow::bail!("Project name cannot be empty");
+    }
+
+    // Reject path traversal
+    let path = Path::new(name);
+    for component in path.components() {
+        match component {
+            Component::ParentDir => {
+                anyhow::bail!("Project name cannot contain '..' (path traversal)");
+            }
+            Component::RootDir | Component::Prefix(_) => {
+                anyhow::bail!("Project name cannot be an absolute path");
+            }
+            _ => {}
+        }
+    }
+
+    // Reject names with slashes (implicit subdirectories)
+    if name.contains('/') || name.contains('\\') {
+        anyhow::bail!("Project name cannot contain path separators");
+    }
+
+    // Reject problematic characters
+    let invalid_chars = ['@', '#', '$', '!', '&', '|', ';', '`', '"', '\'', '*', '?'];
+    if let Some(c) = name.chars().find(|c| invalid_chars.contains(c)) {
+        anyhow::bail!("Project name contains invalid character: '{}'", c);
+    }
+
+    // Reject names that are only whitespace
+    if name.trim().is_empty() {
+        anyhow::bail!("Project name cannot be only whitespace");
+    }
 
     Ok(())
 }

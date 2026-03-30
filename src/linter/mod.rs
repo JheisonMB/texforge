@@ -52,13 +52,11 @@ pub fn lint(root: &Path, entry: &str, bib_file: Option<&str>) -> Result<Vec<Lint
     // Collect all labels defined across files
     let mut all_labels = HashSet::new();
     for file in &tex_files {
-        let rel = file.strip_prefix(root).unwrap_or(file);
         let content = std::fs::read_to_string(file)?;
-        for (i, line) in content.lines().enumerate() {
+        for line in content.lines() {
             for label in extract_commands(line, "label") {
                 all_labels.insert(label.to_string());
             }
-            let _ = (i, rel); // used below
         }
     }
 
@@ -71,67 +69,137 @@ pub fn lint(root: &Path, entry: &str, bib_file: Option<&str>) -> Result<Vec<Lint
             .to_string();
         let content = std::fs::read_to_string(file)?;
 
-        for (i, line) in content.lines().enumerate() {
-            let line_num = i + 1;
+        check_references(
+            root,
+            &rel,
+            &content,
+            bib_file,
+            &bib_keys,
+            &all_labels,
+            &mut errors,
+        );
+        check_environments(&rel, &content, &mut errors);
+    }
 
-            // Check \input{} files exist
-            for arg in extract_commands(line, "input") {
-                let input_path = resolve_tex_path(root, arg);
-                if !input_path.exists() {
-                    errors.push(LintError {
-                        file: rel.clone(),
-                        line: line_num,
-                        message: format!("\\input{{{}}} — file not found", arg),
-                        suggestion: Some(format!("Create {}", input_path.display())),
-                    });
-                }
+    Ok(errors)
+}
+
+/// Check \input, \includegraphics, \cite, \ref references.
+fn check_references(
+    root: &Path,
+    rel: &str,
+    content: &str,
+    bib_file: Option<&str>,
+    bib_keys: &HashSet<String>,
+    all_labels: &HashSet<String>,
+    errors: &mut Vec<LintError>,
+) {
+    for (i, line) in content.lines().enumerate() {
+        let line_num = i + 1;
+
+        for arg in extract_commands(line, "input") {
+            let input_path = resolve_tex_path(root, arg);
+            if !input_path.exists() {
+                errors.push(LintError {
+                    file: rel.to_string(),
+                    line: line_num,
+                    message: format!("\\input{{{}}} — file not found", arg),
+                    suggestion: Some(format!("Create {}", input_path.display())),
+                });
             }
+        }
 
-            // Check \includegraphics{} files exist
-            for arg in extract_commands(line, "includegraphics") {
-                let img_path = root.join(arg);
-                if !img_path.exists() {
-                    errors.push(LintError {
-                        file: rel.clone(),
-                        line: line_num,
-                        message: format!("\\includegraphics{{{}}} — file not found", arg),
-                        suggestion: None,
-                    });
-                }
+        for arg in extract_commands(line, "includegraphics") {
+            let img_path = root.join(arg);
+            if !img_path.exists() {
+                errors.push(LintError {
+                    file: rel.to_string(),
+                    line: line_num,
+                    message: format!("\\includegraphics{{{}}} — file not found", arg),
+                    suggestion: None,
+                });
             }
+        }
 
-            // Check \cite{} keys exist in .bib
-            if bib_file.is_some() {
-                for arg in extract_commands(line, "cite") {
-                    for key in arg.split(',') {
-                        let key = key.trim();
-                        if !key.is_empty() && !bib_keys.contains(key) {
-                            errors.push(LintError {
-                                file: rel.clone(),
-                                line: line_num,
-                                message: format!("\\cite{{{}}} — key not found in .bib", key),
-                                suggestion: None,
-                            });
-                        }
+        if bib_file.is_some() {
+            for arg in extract_commands(line, "cite") {
+                for key in arg.split(',') {
+                    let key = key.trim();
+                    if !key.is_empty() && !bib_keys.contains(key) {
+                        errors.push(LintError {
+                            file: rel.to_string(),
+                            line: line_num,
+                            message: format!("\\cite{{{}}} — key not found in .bib", key),
+                            suggestion: None,
+                        });
                     }
                 }
             }
+        }
 
-            // Check \ref{} has matching \label{}
-            for arg in extract_commands(line, "ref") {
-                if !all_labels.contains(arg) {
+        for arg in extract_commands(line, "ref") {
+            if !all_labels.contains(arg) {
+                errors.push(LintError {
+                    file: rel.to_string(),
+                    line: line_num,
+                    message: format!("\\ref{{{}}} — no matching \\label found", arg),
+                    suggestion: None,
+                });
+            }
+        }
+    }
+}
+
+/// Check for unclosed \begin{env} environments.
+fn check_environments(rel: &str, content: &str, errors: &mut Vec<LintError>) {
+    // Stack of (env_name, line_number)
+    let mut stack: Vec<(&str, usize)> = Vec::new();
+
+    for (i, line) in content.lines().enumerate() {
+        let line_num = i + 1;
+        let trimmed = line.trim();
+
+        // Skip comments
+        if trimmed.starts_with('%') {
+            continue;
+        }
+
+        for env in extract_commands(trimmed, "begin") {
+            stack.push((env, line_num));
+        }
+
+        for env in extract_commands(trimmed, "end") {
+            if let Some((open_env, _)) = stack.last() {
+                if *open_env == env {
+                    stack.pop();
+                } else {
                     errors.push(LintError {
-                        file: rel.clone(),
+                        file: rel.to_string(),
                         line: line_num,
-                        message: format!("\\ref{{{}}} — no matching \\label found", arg),
-                        suggestion: None,
+                        message: format!("\\end{{{}}} does not match \\begin{{{}}}", env, open_env),
+                        suggestion: Some(format!("Expected \\end{{{}}}", open_env)),
                     });
                 }
+            } else {
+                errors.push(LintError {
+                    file: rel.to_string(),
+                    line: line_num,
+                    message: format!("\\end{{{}}} without matching \\begin", env),
+                    suggestion: None,
+                });
             }
         }
     }
 
-    Ok(errors)
+    // Report unclosed environments
+    for (env, line_num) in stack {
+        errors.push(LintError {
+            file: rel.to_string(),
+            line: line_num,
+            message: format!("\\begin{{{}}} never closed", env),
+            suggestion: Some(format!("Add \\end{{{}}}", env)),
+        });
+    }
 }
 
 /// Extract arguments from `\command{arg}` and `\command[opts]{arg}` occurrences in a line.
@@ -174,7 +242,7 @@ fn resolve_tex_path(root: &Path, input: &str) -> std::path::PathBuf {
     }
 }
 
-/// Recursively collect .tex files referenced by \input{}.
+/// Recursively collect .tex files referenced by `\input{}`.
 fn collect_tex_files(root: &Path, entry: &str, files: &mut Vec<std::path::PathBuf>) {
     let path = resolve_tex_path(root, entry);
     if !path.exists() || files.contains(&path) {
@@ -191,7 +259,7 @@ fn collect_tex_files(root: &Path, entry: &str, files: &mut Vec<std::path::PathBu
     }
 }
 
-/// Parse @type{key, ...} entries from a .bib file.
+/// Parse `@type{key, ...}` entries from a .bib file.
 fn parse_bib_keys(path: &Path) -> HashSet<String> {
     let mut keys = HashSet::new();
     let Ok(content) = std::fs::read_to_string(path) else {
