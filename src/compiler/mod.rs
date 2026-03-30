@@ -23,7 +23,6 @@ pub fn compile(root: &Path, entry: &str) -> Result<()> {
         return Ok(());
     }
 
-    // Parse and clean up error output
     let stderr = String::from_utf8_lossy(&output.stderr);
     let stdout = String::from_utf8_lossy(&output.stdout);
     let raw = format!("{}{}", stdout, stderr);
@@ -56,7 +55,6 @@ fn parse_errors(raw: &str) -> Vec<CompileError> {
     for line in raw.lines() {
         let trimmed = line.trim();
 
-        // Tectonic format: "error: <file>:<line>: <message>"
         if let Some(rest) = trimmed.strip_prefix("error:") {
             let rest = rest.trim();
             if let Some((loc, msg)) = rest.split_once(": ") {
@@ -71,7 +69,6 @@ fn parse_errors(raw: &str) -> Vec<CompileError> {
                     }
                 }
             }
-            // Fallback: error without parseable location
             errors.push(CompileError {
                 file: String::new(),
                 line: 0,
@@ -79,7 +76,6 @@ fn parse_errors(raw: &str) -> Vec<CompileError> {
             });
         }
 
-        // TeX format: "! <message>" followed by "l.<num>"
         if let Some(msg) = trimmed.strip_prefix("! ") {
             errors.push(CompileError {
                 file: String::new(),
@@ -87,13 +83,11 @@ fn parse_errors(raw: &str) -> Vec<CompileError> {
                 message: msg.to_string(),
             });
         }
-        if trimmed.starts_with("l.") {
-            if let Some(num_str) = trimmed.strip_prefix("l.") {
-                let num_part: String = num_str.chars().take_while(|c| c.is_ascii_digit()).collect();
-                if let Ok(n) = num_part.parse::<usize>() {
-                    if let Some(last) = errors.last_mut() {
-                        last.line = n;
-                    }
+        if let Some(num_str) = trimmed.strip_prefix("l.") {
+            let num_part: String = num_str.chars().take_while(|c| c.is_ascii_digit()).collect();
+            if let Ok(n) = num_part.parse::<usize>() {
+                if let Some(last) = errors.last_mut() {
+                    last.line = n;
                 }
             }
         }
@@ -102,7 +96,7 @@ fn parse_errors(raw: &str) -> Vec<CompileError> {
     errors
 }
 
-/// Find the tectonic binary.
+/// Find the tectonic binary in PATH or known locations.
 fn find_tectonic() -> Result<std::path::PathBuf> {
     // Check PATH
     if let Ok(output) = Command::new("which").arg("tectonic").output() {
@@ -112,8 +106,9 @@ fn find_tectonic() -> Result<std::path::PathBuf> {
         }
     }
 
-    // Common install locations
+    // Check known locations (including texforge-managed install)
     for candidate in [
+        dirs::home_dir().map(|h| h.join(".texforge/bin/tectonic")),
         dirs::home_dir().map(|h| h.join(".cargo/bin/tectonic")),
         Some("/usr/local/bin/tectonic".into()),
         Some("/opt/homebrew/bin/tectonic".into()),
@@ -127,8 +122,8 @@ fn find_tectonic() -> Result<std::path::PathBuf> {
     }
 
     anyhow::bail!(
-        "Tectonic not found. Install it with:\n\
-         \n  cargo install tectonic\n\
-         \nor visit https://tectonic-typesetting.github.io/"
+        "Tectonic not found. Install everything with:\n\
+         \n  curl -fsSL https://raw.githubusercontent.com/JheisonMB/texforge/main/install.sh | sh\n\
+         \nor install tectonic separately: cargo install tectonic"
     );
 }
