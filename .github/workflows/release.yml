@@ -107,7 +107,7 @@ jobs:
         if: matrix.archive == 'tar.gz'
         run: |
           cd target/${{ matrix.target }}/release
-          tar czf ../../../task-trigger-mcp-${{ needs.create-tag.outputs.tag }}-${{ matrix.target }}.tar.gz task-trigger-mcp
+          tar czf ../../../texforge-${{ needs.create-tag.outputs.tag }}-${{ matrix.target }}.tar.gz texforge
           cd ../../..
 
       - name: Package (windows)
@@ -115,14 +115,14 @@ jobs:
         shell: pwsh
         run: |
           cd target/${{ matrix.target }}/release
-          Compress-Archive -Path task-trigger-mcp.exe -DestinationPath ../../../task-trigger-mcp-${{ needs.create-tag.outputs.tag }}-${{ matrix.target }}.zip
+          Compress-Archive -Path texforge.exe -DestinationPath ../../../texforge-${{ needs.create-tag.outputs.tag }}-${{ matrix.target }}.zip
           cd ../../..
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
-          name: task-trigger-mcp-${{ matrix.target }}
-          path: task-trigger-mcp-${{ needs.create-tag.outputs.tag }}-${{ matrix.target }}.*
+          name: texforge-${{ matrix.target }}
+          path: texforge-${{ needs.create-tag.outputs.tag }}-${{ matrix.target }}.*
 
   github-release:
     name: Create GitHub Release
@@ -168,4 +168,3 @@ jobs:
 
       - name: Cargo publish
         run: cargo publish --token ${{ secrets.CARGO_TOKEN }}
-
