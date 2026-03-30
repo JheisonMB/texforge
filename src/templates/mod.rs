@@ -17,7 +17,6 @@ const GENERAL_REFERENCES_BIB: &str = include_str!("general/bib/references.bib");
 
 /// A resolved template ready to scaffold a project.
 pub struct ResolvedTemplate {
-    pub name: String,
     /// Map of relative path -> file contents.
     pub files: HashMap<String, Vec<u8>>,
 }
@@ -61,10 +60,7 @@ fn embedded_general() -> ResolvedTemplate {
         "bib/references.bib".into(),
         GENERAL_REFERENCES_BIB.as_bytes().to_vec(),
     );
-    ResolvedTemplate {
-        name: "general".into(),
-        files,
-    }
+    ResolvedTemplate { files }
 }
 
 fn load_from_cache(name: &str) -> Result<ResolvedTemplate> {
@@ -72,10 +68,10 @@ fn load_from_cache(name: &str) -> Result<ResolvedTemplate> {
     if !dir.is_dir() {
         anyhow::bail!("not cached");
     }
-    load_dir_recursive(&dir, name)
+    load_dir_recursive(&dir)
 }
 
-fn load_dir_recursive(base: &Path, name: &str) -> Result<ResolvedTemplate> {
+fn load_dir_recursive(base: &Path) -> Result<ResolvedTemplate> {
     let mut files = HashMap::new();
     for entry in walkdir::WalkDir::new(base)
         .into_iter()
@@ -91,10 +87,7 @@ fn load_dir_recursive(base: &Path, name: &str) -> Result<ResolvedTemplate> {
             files.insert(rel, content);
         }
     }
-    Ok(ResolvedTemplate {
-        name: name.into(),
-        files,
-    })
+    Ok(ResolvedTemplate { files })
 }
 
 /// Download a template tarball from GitHub and cache it locally.
@@ -157,10 +150,7 @@ pub fn download(name: &str) -> Result<ResolvedTemplate> {
         anyhow::bail!("Template '{}' not found in registry", name);
     }
 
-    Ok(ResolvedTemplate {
-        name: name.into(),
-        files,
-    })
+    Ok(ResolvedTemplate { files })
 }
 
 /// List template names available in local cache.

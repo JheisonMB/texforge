@@ -7,7 +7,6 @@ mod cli;
 mod commands;
 mod compiler;
 mod domain;
-mod error;
 mod formatter;
 mod linter;
 mod templates;
