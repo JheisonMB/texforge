@@ -54,7 +54,8 @@ pub fn lint(root: &Path, entry: &str, bib_file: Option<&str>) -> Result<Vec<Lint
     for file in &tex_files {
         let content = std::fs::read_to_string(file)?;
         for line in content.lines() {
-            for label in extract_commands(line, "label") {
+            let line = strip_comment(line);
+            for label in extract_commands(&line, "label") {
                 all_labels.insert(label.to_string());
             }
         }
@@ -96,8 +97,9 @@ fn check_references(
 ) {
     for (i, line) in content.lines().enumerate() {
         let line_num = i + 1;
+        let line = strip_comment(line);
 
-        for arg in extract_commands(line, "input") {
+        for arg in extract_commands(&line, "input") {
             let input_path = resolve_tex_path(root, arg);
             if !input_path.exists() {
                 errors.push(LintError {
@@ -109,7 +111,7 @@ fn check_references(
             }
         }
 
-        for arg in extract_commands(line, "includegraphics") {
+        for arg in extract_commands(&line, "includegraphics") {
             let img_path = root.join(arg);
             if !img_path.exists() {
                 errors.push(LintError {
@@ -122,7 +124,7 @@ fn check_references(
         }
 
         if bib_file.is_some() {
-            for arg in extract_commands(line, "cite") {
+            for arg in extract_commands(&line, "cite") {
                 for key in arg.split(',') {
                     let key = key.trim();
                     if !key.is_empty() && !bib_keys.contains(key) {
@@ -137,7 +139,7 @@ fn check_references(
             }
         }
 
-        for arg in extract_commands(line, "ref") {
+        for arg in extract_commands(&line, "ref") {
             if !all_labels.contains(arg) {
                 errors.push(LintError {
                     file: rel.to_string(),
@@ -252,11 +254,28 @@ fn collect_tex_files(root: &Path, entry: &str, files: &mut Vec<std::path::PathBu
 
     if let Ok(content) = std::fs::read_to_string(&path) {
         for line in content.lines() {
-            for input in extract_commands(line, "input") {
+            let line = strip_comment(line);
+            for input in extract_commands(&line, "input") {
                 collect_tex_files(root, input, files);
             }
         }
     }
+}
+
+/// Strip LaTeX comment from a line (everything after unescaped %).
+fn strip_comment(line: &str) -> String {
+    let mut result = String::with_capacity(line.len());
+    let mut prev_backslash = false;
+
+    for c in line.chars() {
+        if c == '%' && !prev_backslash {
+            break;
+        }
+        prev_backslash = c == '\\';
+        result.push(c);
+    }
+
+    result
 }
 
 /// Parse `@type{key, ...}` entries from a .bib file.
