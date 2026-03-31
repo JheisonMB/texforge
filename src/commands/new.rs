@@ -88,6 +88,11 @@ fn validate_project_name(name: &str) -> Result<()> {
         anyhow::bail!("Project name cannot contain path separators");
     }
 
+    // Reject names with spaces
+    if name.contains(' ') {
+        anyhow::bail!("Project name cannot contain spaces — use hyphens instead (e.g. 'mi-tesis')");
+    }
+
     // Reject problematic characters
     let invalid_chars = ['@', '#', '$', '!', '&', '|', ';', '`', '"', '\'', '*', '?'];
     if let Some(c) = name.chars().find(|c| invalid_chars.contains(c)) {
