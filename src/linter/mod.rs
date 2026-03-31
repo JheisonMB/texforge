@@ -41,7 +41,7 @@ pub fn lint(root: &Path, entry: &str, bib_file: Option<&str>) -> Result<Vec<Lint
 
     // Collect all .tex files reachable from entry
     let mut tex_files = Vec::new();
-    collect_tex_files(root, entry, &mut tex_files);
+    collect_tex_files(root, entry, &mut tex_files, &mut errors);
 
     // Parse .bib keys if bibliography exists
     let bib_keys = match bib_file {
@@ -245,9 +245,23 @@ fn resolve_tex_path(root: &Path, input: &str) -> std::path::PathBuf {
 }
 
 /// Recursively collect .tex files referenced by `\input{}`.
-fn collect_tex_files(root: &Path, entry: &str, files: &mut Vec<std::path::PathBuf>) {
+fn collect_tex_files(
+    root: &Path,
+    entry: &str,
+    files: &mut Vec<std::path::PathBuf>,
+    errors: &mut Vec<LintError>,
+) {
     let path = resolve_tex_path(root, entry);
-    if !path.exists() || files.contains(&path) {
+    if !path.exists() {
+        return;
+    }
+    if files.contains(&path) {
+        errors.push(LintError {
+            file: entry.to_string(),
+            line: 0,
+            message: format!("Circular \\input detected: {}", path.display()),
+            suggestion: Some("Remove the circular reference".into()),
+        });
         return;
     }
     files.push(path.clone());
@@ -256,7 +270,7 @@ fn collect_tex_files(root: &Path, entry: &str, files: &mut Vec<std::path::PathBu
         for line in content.lines() {
             let line = strip_comment(line);
             for input in extract_commands(&line, "input") {
-                collect_tex_files(root, input, files);
+                collect_tex_files(root, input, files, errors);
             }
         }
     }
