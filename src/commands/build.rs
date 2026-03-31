@@ -2,22 +2,22 @@
 
 use anyhow::Result;
 
+use crate::compiler;
 use crate::domain::project::Project;
 
-/// Compile project to PDF
+/// Compile project to PDF.
 pub fn execute() -> Result<()> {
     let project = Project::load()?;
-    
+
     println!("Building project: {}", project.config.documento.titulo);
-    println!("Entry point: {}", project.entry_path().display());
-    println!("TODO: Implement compilation");
-    
-    // TODO:
-    // 1. Load template
-    // 2. Assemble document (preamble + body)
-    // 3. Render embedded diagrams (Mermaid, Graphviz)
-    // 4. Compile with internal engine
-    // 5. Report clean errors on failure
-    
+
+    // Ensure build directory exists
+    std::fs::create_dir_all(project.root.join("build"))?;
+
+    compiler::compile(&project.root, &project.config.compilacion.entry)?;
+
+    let pdf_name = std::path::Path::new(&project.config.compilacion.entry).with_extension("pdf");
+    println!("✅ build/{}", pdf_name.display());
+
     Ok(())
 }
