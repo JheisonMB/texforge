@@ -223,7 +223,10 @@ fn extract_commands<'a>(line: &'a str, cmd: &str) -> Vec<&'a str> {
         };
         if after.starts_with('{') {
             if let Some(end) = after.find('}') {
-                results.push(&after[1..end]);
+                let arg = after[1..end].trim();
+                if !arg.is_empty() {
+                    results.push(arg);
+                }
                 search = &after[end + 1..];
                 continue;
             }
