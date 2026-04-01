@@ -331,11 +331,7 @@ fn check_mermaid_blocks(rel: &str, content: &str, errors: &mut Vec<LintError>) {
         }
 
         // Check for unclosed block
-        let rest = &content[content
-            .lines()
-            .take(i)
-            .map(|l| l.len() + 1)
-            .sum::<usize>()..];
+        let rest = &content[content.lines().take(i).map(|l| l.len() + 1).sum::<usize>()..];
         if !rest.contains("\\end{mermaid}") {
             errors.push(LintError {
                 file: rel.to_string(),
@@ -381,17 +377,29 @@ fn extract_inputminted_files(line: &str) -> Vec<&str> {
         let after = &search[pos + "\\inputminted".len()..];
         // skip optional [...]
         let after = if after.starts_with('[') {
-            match after.find(']') { Some(e) => &after[e + 1..], None => break }
-        } else { after };
+            match after.find(']') {
+                Some(e) => &after[e + 1..],
+                None => break,
+            }
+        } else {
+            after
+        };
         // skip first {lang}
         let after = if after.starts_with('{') {
-            match after.find('}') { Some(e) => &after[e + 1..], None => break }
-        } else { break };
+            match after.find('}') {
+                Some(e) => &after[e + 1..],
+                None => break,
+            }
+        } else {
+            break;
+        };
         // extract second {file}
         if after.starts_with('{') {
             if let Some(end) = after.find('}') {
                 let arg = after[1..end].trim();
-                if !arg.is_empty() { results.push(arg); }
+                if !arg.is_empty() {
+                    results.push(arg);
+                }
                 search = &after[end + 1..];
                 continue;
             }
