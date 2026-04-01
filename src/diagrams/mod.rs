@@ -78,7 +78,10 @@ fn render_diagrams(content: &str, diagrams_dir: &Path, counter: &mut usize) -> R
                 pos
             );
         }
-        let width   = opts.get("width").map(String::as_str).unwrap_or("\\linewidth");
+        let width = opts
+            .get("width")
+            .map(String::as_str)
+            .unwrap_or("\\linewidth");
         let caption = opts.get("caption");
         let rel_path = format!("diagrams/{}", filename);
 
@@ -160,7 +163,11 @@ fn extract_inputs(line: &str) -> Vec<&str> {
 
 fn resolve_tex(root: &Path, input: &str) -> PathBuf {
     let p = root.join(input);
-    if p.extension().is_some() { p } else { p.with_extension("tex") }
+    if p.extension().is_some() {
+        p
+    } else {
+        p.with_extension("tex")
+    }
 }
 
 /// Mirror asset directories into build/ using symlinks (Unix) or file copy (Windows).
@@ -204,8 +211,13 @@ fn mirror_assets(root: &Path, build_dir: &Path) -> Result<()> {
 fn link_or_copy_dir(src: &Path, dest: &Path) -> Result<()> {
     // Symlink: dest -> ../dirname (relative from build/)
     let target = std::path::Path::new("..").join(src.file_name().unwrap());
-    std::os::unix::fs::symlink(&target, dest)
-        .with_context(|| format!("Failed to symlink {} -> {}", dest.display(), target.display()))
+    std::os::unix::fs::symlink(&target, dest).with_context(|| {
+        format!(
+            "Failed to symlink {} -> {}",
+            dest.display(),
+            target.display()
+        )
+    })
 }
 
 #[cfg(not(unix))]
@@ -217,7 +229,10 @@ fn link_or_copy_dir(src: &Path, dest: &Path) -> Result<()> {
 #[cfg(not(unix))]
 fn copy_dir_recursive(src: &Path, dest: &Path) -> Result<()> {
     std::fs::create_dir_all(dest)?;
-    for entry in walkdir::WalkDir::new(src).into_iter().filter_map(|e| e.ok()) {
+    for entry in walkdir::WalkDir::new(src)
+        .into_iter()
+        .filter_map(|e| e.ok())
+    {
         let rel = entry.path().strip_prefix(src).unwrap();
         let target = dest.join(rel);
         if entry.file_type().is_dir() {
@@ -232,17 +247,20 @@ fn copy_dir_recursive(src: &Path, dest: &Path) -> Result<()> {
 /// Convert SVG string to PNG bytes at 2x scale for print quality.
 fn svg_to_png(svg: &str) -> Result<Vec<u8>> {
     let options = resvg::usvg::Options::default();
-    let tree = resvg::usvg::Tree::from_str(svg, &options)
-        .context("Failed to parse SVG")?;
+    let tree = resvg::usvg::Tree::from_str(svg, &options).context("Failed to parse SVG")?;
 
     let scale = 2.0_f32;
-    let width  = (tree.size().width()  * scale) as u32;
+    let width = (tree.size().width() * scale) as u32;
     let height = (tree.size().height() * scale) as u32;
 
-    let mut pixmap = resvg::tiny_skia::Pixmap::new(width, height)
-        .context("Failed to create pixmap")?;
+    let mut pixmap =
+        resvg::tiny_skia::Pixmap::new(width, height).context("Failed to create pixmap")?;
 
-    resvg::render(&tree, resvg::tiny_skia::Transform::from_scale(scale, scale), &mut pixmap.as_mut());
+    resvg::render(
+        &tree,
+        resvg::tiny_skia::Transform::from_scale(scale, scale),
+        &mut pixmap.as_mut(),
+    );
 
     pixmap.encode_png().context("Failed to encode PNG")
 }

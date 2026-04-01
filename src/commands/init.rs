@@ -13,8 +13,7 @@ pub fn execute() -> Result<()> {
     }
 
     // Detect entry point: file with \documentclass
-    let entry = detect_entry(&root)
-        .unwrap_or_else(|| "main.tex".to_string());
+    let entry = detect_entry(&root).unwrap_or_else(|| "main.tex".to_string());
 
     // Detect bibliography: first .bib file found
     let bib = detect_bib(&root);
