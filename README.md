@@ -72,9 +72,9 @@ rm -f ~/.local/bin/texforge  # texforge binary
 rm -rf ~/.texforge/           # tectonic engine + cached templates
 ```
 
-## Agent Skill
+## Skill
 
-An [Agent Skill](https://github.com/jheisonmb/skills) is available for AI-assisted LaTeX workflows with texforge:
+An [texforge Skill](https://skills.sh/jheisonmb/skills/texforge) is available for AI-assisted LaTeX workflows with texforge:
 
 ```bash
 npx skills add https://github.com/jheisonmb/skills --skill texforge
