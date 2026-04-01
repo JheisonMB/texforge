@@ -526,4 +526,18 @@ mod tests {
         let errors = lint(dir.path(), &entry, None).unwrap();
         assert!(has_error(&errors, "code.py"));
     }
+
+    #[test]
+    fn graphviz_invalid_pos_is_error() {
+        let (dir, entry) = setup("\\begin{graphviz}[pos=Z]\n\\end{graphviz}");
+        let errors = lint(dir.path(), &entry, None).unwrap();
+        assert!(has_error(&errors, "invalid pos"));
+    }
+
+    #[test]
+    fn graphviz_without_end_is_error() {
+        let (dir, entry) = setup("\\begin{graphviz}");
+        let errors = lint(dir.path(), &entry, None).unwrap();
+        assert!(has_error(&errors, "without matching \\end{graphviz}"));
+    }
 }

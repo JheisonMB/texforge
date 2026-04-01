@@ -57,7 +57,7 @@ fn render_diagrams(content: &str, diagrams_dir: &Path, counter: &mut usize) -> R
 }
 
 /// Generic environment renderer: replaces `\begin{env}[opts]...\end{env}` with figure.
-fn render_env(
+pub(crate) fn render_env(
     content: &str,
     env: &str,
     diagrams_dir: &Path,
@@ -327,5 +327,41 @@ mod tests {
     fn parse_opts_caption() {
         let (map, _) = parse_opts("[caption=My diagram]");
         assert_eq!(map.get("caption").map(String::as_str), Some("My diagram"));
+    }
+
+    #[test]
+    fn render_graphviz_produces_svg() {
+        let dot = "digraph G { A -> B }";
+        let svg = render_graphviz(dot).unwrap();
+        assert!(
+            svg.contains("<svg"),
+            "expected SVG output, got: {}",
+            &svg[..100.min(svg.len())]
+        );
+    }
+
+    #[test]
+    fn render_env_no_blocks_unchanged() {
+        let content = "hello world";
+        let dir = tempfile::tempdir().unwrap();
+        let mut counter = 0;
+        let result = render_env(content, "graphviz", dir.path(), &mut counter, |_| {
+            Ok(vec![])
+        })
+        .unwrap();
+        assert_eq!(result, content);
+        assert_eq!(counter, 0);
+    }
+
+    #[test]
+    fn render_env_invalid_pos_returns_error() {
+        let content = "\\begin{graphviz}[pos=Z]\ndigraph G{}\n\\end{graphviz}";
+        let dir = tempfile::tempdir().unwrap();
+        let mut counter = 0;
+        let err = render_env(content, "graphviz", dir.path(), &mut counter, |_| {
+            Ok(vec![1, 2, 3])
+        })
+        .unwrap_err();
+        assert!(err.to_string().contains("pos='Z'"));
     }
 }
