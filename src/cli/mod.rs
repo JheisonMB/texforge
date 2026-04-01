@@ -43,7 +43,11 @@ enum Commands {
 #[derive(Subcommand)]
 enum TemplateAction {
     /// List available templates
-    List,
+    List {
+        /// Also show templates available in the remote registry
+        #[arg(long)]
+        all: bool,
+    },
     /// Add a template from URL or registry
     Add { source: String },
     /// Remove a template
@@ -60,7 +64,7 @@ impl Cli {
             Commands::Fmt { check } => commands::fmt::execute(check),
             Commands::Check => commands::check::execute(),
             Commands::Template { action } => match action {
-                TemplateAction::List => commands::template::list(),
+                TemplateAction::List { all } => commands::template::list(all),
                 TemplateAction::Add { source } => commands::template::add(&source),
                 TemplateAction::Remove { name } => commands::template::remove(&name),
                 TemplateAction::Validate { name } => commands::template::validate(&name),

@@ -5,17 +5,43 @@ use anyhow::Result;
 use crate::templates;
 
 /// List available templates.
-pub fn list() -> Result<()> {
+pub fn list(all: bool) -> Result<()> {
     let cached = templates::list_cached()?;
-    if cached.is_empty() {
-        println!("No templates installed locally.");
-        println!("The 'general' template is always available (built-in).");
-    } else {
-        println!("Installed templates:");
-        for name in &cached {
-            println!("  - {}", name);
+    let installed: std::collections::HashSet<&str> =
+        cached.iter().map(String::as_str).collect();
+
+    println!("Installed:");
+    println!("  - general (built-in)");
+    for name in &cached {
+        println!("  - {}", name);
+    }
+
+    if all {
+        print!("\nFetching remote registry...");
+        match templates::list_remote() {
+            Ok(remote) => {
+                println!("\r                            \r"); // clear line
+                let available: Vec<&str> = remote
+                    .iter()
+                    .map(String::as_str)
+                    .filter(|n| *n != "general" && !installed.contains(n))
+                    .collect();
+                if available.is_empty() {
+                    println!("Available (not installed): none");
+                } else {
+                    println!("Available (not installed):");
+                    for name in available {
+                        println!("  - {}", name);
+                    }
+                }
+                println!("\nRun 'texforge template add <name>' to install.");
+            }
+            Err(e) => {
+                println!("\nCould not reach registry: {}", e);
+            }
         }
     }
+
     Ok(())
 }
 

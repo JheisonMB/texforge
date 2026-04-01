@@ -31,7 +31,7 @@ walkdir = "2.5"
 dirs = "6.0"
 
 # HTTP client (template downloads)
-reqwest = { version = "0.13", features = ["blocking"] }
+reqwest = { version = "0.13", features = ["blocking", "json"] }
 
 # Archive extraction (GitHub tarballs)
 flate2 = "1.1"
