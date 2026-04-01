@@ -6,7 +6,6 @@ use std::process::Command;
 use anyhow::{Context, Result};
 
 /// Compile a LaTeX project to PDF using Tectonic.
-/// `root` is the working directory; output PDF goes into `root/` itself.
 pub fn compile(root: &Path, entry: &str) -> Result<()> {
     let tectonic = find_tectonic()?;
     let entry_path = root.join(entry);
@@ -14,7 +13,7 @@ pub fn compile(root: &Path, entry: &str) -> Result<()> {
     let output = Command::new(&tectonic)
         .arg(&entry_path)
         .arg("--outdir")
-        .arg(root)
+        .arg(root.join("build"))
         .arg("--keep-logs")
         .current_dir(root)
         .output()
