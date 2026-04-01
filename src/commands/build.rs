@@ -3,6 +3,7 @@
 use anyhow::Result;
 
 use crate::compiler;
+use crate::diagrams;
 use crate::domain::project::Project;
 
 /// Compile project to PDF.
@@ -13,6 +14,9 @@ pub fn execute() -> Result<()> {
 
     // Ensure build directory exists
     std::fs::create_dir_all(project.root.join("build"))?;
+
+    // Pre-process embedded diagrams (mermaid, etc.)
+    diagrams::process(&project.root, &project.config.compilacion.entry)?;
 
     compiler::compile(&project.root, &project.config.compilacion.entry)?;
 

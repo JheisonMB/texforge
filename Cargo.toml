@@ -38,6 +38,10 @@ flate2 = "1.1"
 tar = "0.4"
 zip = { version = "2", default-features = false, features = ["deflate"] }
 
+# Mermaid diagram rendering
+mermaid-rs-renderer = { version = "0.2", default-features = false }
+resvg = "0.46"
+
 [dev-dependencies]
 tempfile = "3.8"
 
