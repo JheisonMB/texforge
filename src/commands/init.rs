@@ -56,36 +56,34 @@ entry = "{}"
 
 /// Find the .tex file that contains \documentclass.
 fn detect_entry(root: &Path) -> Option<String> {
-    for entry in walkdir::WalkDir::new(root)
-        .max_depth(2)
-        .into_iter()
-        .filter_map(|e| e.ok())
-    {
-        let path = entry.path();
-        if path.extension().and_then(|e| e.to_str()) != Some("tex") {
-            continue;
-        }
-        if let Ok(content) = std::fs::read_to_string(path) {
-            if content.contains("\\documentclass") {
-                return path
-                    .strip_prefix(root)
-                    .ok()
-                    .map(|p| p.to_string_lossy().to_string());
-            }
-        }
-    }
-    None
+    find_file_by(root, 2, |path, _| {
+        path.extension().and_then(|e| e.to_str()) == Some("tex")
+            && std::fs::read_to_string(path)
+                .map(|c| c.contains("\\documentclass"))
+                .unwrap_or(false)
+    })
 }
 
 /// Find the first .bib file in the project.
 fn detect_bib(root: &Path) -> Option<String> {
+    find_file_by(root, 3, |path, _| {
+        path.extension().and_then(|e| e.to_str()) == Some("bib")
+    })
+}
+
+/// Walk `root` up to `max_depth` and return the first file matching `predicate`.
+fn find_file_by(
+    root: &Path,
+    max_depth: usize,
+    predicate: impl Fn(&std::path::Path, &walkdir::DirEntry) -> bool,
+) -> Option<String> {
     for entry in walkdir::WalkDir::new(root)
-        .max_depth(3)
+        .max_depth(max_depth)
         .into_iter()
         .filter_map(|e| e.ok())
     {
         let path = entry.path();
-        if path.extension().and_then(|e| e.to_str()) == Some("bib") {
+        if path.is_file() && predicate(path, &entry) {
             return path
                 .strip_prefix(root)
                 .ok()
