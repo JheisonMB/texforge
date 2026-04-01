@@ -137,11 +137,7 @@ mod tests {
     fn indentation_inside_environment() {
         let src = "\\begin{document}\nhello\n\\end{document}";
         let out = format(src);
-        assert!(
-            out.contains("  hello"),
-            "expected indented 'hello', got:\n{}",
-            out
-        );
+        assert!(out.contains("  hello"), "expected indented 'hello', got:\n{}", out);
     }
 
     #[test]

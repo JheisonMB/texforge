@@ -80,6 +80,7 @@ pub fn lint(root: &Path, entry: &str, bib_file: Option<&str>) -> Result<Vec<Lint
             &mut errors,
         );
         check_environments(&rel, &content, &mut errors);
+        check_mermaid_blocks(&rel, &content, &mut errors);
     }
 
     Ok(errors)
@@ -123,30 +124,6 @@ fn check_references(
             }
         }
 
-        for arg in extract_commands(&line, "lstinputlisting") {
-            let path = root.join(arg);
-            if !path.exists() {
-                errors.push(LintError {
-                    file: rel.to_string(),
-                    line: line_num,
-                    message: format!("\\lstinputlisting{{{}}} — file not found", arg),
-                    suggestion: None,
-                });
-            }
-        }
-
-        for args in extract_commands_two_args(&line, "inputminted") {
-            let path = root.join(args);
-            if !path.exists() {
-                errors.push(LintError {
-                    file: rel.to_string(),
-                    line: line_num,
-                    message: format!("\\inputminted{{...}}{{{}}} — file not found", args),
-                    suggestion: None,
-                });
-            }
-        }
-
         if bib_file.is_some() {
             for arg in extract_commands(&line, "cite") {
                 for key in arg.split(',') {
@@ -169,6 +146,28 @@ fn check_references(
                     file: rel.to_string(),
                     line: line_num,
                     message: format!("\\ref{{{}}} — no matching \\label found", arg),
+                    suggestion: None,
+                });
+            }
+        }
+
+        for arg in extract_commands(&line, "lstinputlisting") {
+            if !root.join(arg).exists() {
+                errors.push(LintError {
+                    file: rel.to_string(),
+                    line: line_num,
+                    message: format!("\\lstinputlisting{{{}}} — file not found", arg),
+                    suggestion: None,
+                });
+            }
+        }
+
+        for arg in extract_inputminted_files(&line) {
+            if !root.join(arg).exists() {
+                errors.push(LintError {
+                    file: rel.to_string(),
+                    line: line_num,
+                    message: format!("\\inputminted{{{}}} — file not found", arg),
                     suggestion: None,
                 });
             }
@@ -226,53 +225,6 @@ fn check_environments(rel: &str, content: &str, errors: &mut Vec<LintError>) {
             suggestion: Some(format!("Add \\end{{{}}}", env)),
         });
     }
-}
-
-/// Extract the second `{arg}` from `\command{first}{second}` occurrences.
-fn extract_commands_two_args<'a>(line: &'a str, cmd: &str) -> Vec<&'a str> {
-    let mut results = Vec::new();
-    let pattern = format!("\\{}", cmd);
-    let mut search = line;
-
-    while let Some(pos) = search.find(&pattern) {
-        let after = &search[pos + pattern.len()..];
-        // Skip optional args [...]
-        let after = if after.starts_with('[') {
-            match after.find(']') {
-                Some(end) => &after[end + 1..],
-                None => break,
-            }
-        } else {
-            after
-        };
-        // Skip first {arg}
-        let after = if after.starts_with('{') {
-            match after.find('}') {
-                Some(end) => &after[end + 1..],
-                None => {
-                    search = after;
-                    continue;
-                }
-            }
-        } else {
-            search = after;
-            continue;
-        };
-        // Extract second {arg}
-        if after.starts_with('{') {
-            if let Some(end) = after.find('}') {
-                let arg = after[1..end].trim();
-                if !arg.is_empty() {
-                    results.push(arg);
-                }
-                search = &after[end + 1..];
-                continue;
-            }
-        }
-        search = after;
-    }
-
-    results
 }
 
 /// Extract arguments from `\command{arg}` and `\command[opts]{arg}` occurrences in a line.
@@ -366,6 +318,89 @@ fn strip_comment(line: &str) -> String {
     result
 }
 
+/// Check mermaid blocks: unclosed and invalid pos option.
+fn check_mermaid_blocks(rel: &str, content: &str, errors: &mut Vec<LintError>) {
+    const VALID_POS: &[&str] = &["H", "t", "b", "h", "p"];
+
+    for (i, line) in content.lines().enumerate() {
+        let line_num = i + 1;
+        let trimmed = line.trim();
+
+        if !trimmed.starts_with("\\begin{mermaid}") {
+            continue;
+        }
+
+        // Check for unclosed block
+        let rest = &content[content
+            .lines()
+            .take(i)
+            .map(|l| l.len() + 1)
+            .sum::<usize>()..];
+        if !rest.contains("\\end{mermaid}") {
+            errors.push(LintError {
+                file: rel.to_string(),
+                line: line_num,
+                message: "\\begin{mermaid} without matching \\end{mermaid}".into(),
+                suggestion: Some("Add \\end{mermaid}".into()),
+            });
+            continue;
+        }
+
+        // Check pos option if present
+        if let Some(opts_start) = trimmed.find('[') {
+            if let Some(opts_end) = trimmed.find(']') {
+                let opts = &trimmed[opts_start + 1..opts_end];
+                for part in opts.split(',') {
+                    if let Some((k, v)) = part.split_once('=') {
+                        if k.trim() == "pos" {
+                            let pos = v.trim();
+                            if !VALID_POS.contains(&pos) {
+                                errors.push(LintError {
+                                    file: rel.to_string(),
+                                    line: line_num,
+                                    message: format!(
+                                        "\\begin{{mermaid}} invalid pos='{}' — valid values: H, t, b, h, p",
+                                        pos
+                                    ),
+                                    suggestion: Some("Use pos=H, pos=t, pos=b, pos=h, or pos=p".into()),
+                                });
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+/// Extract the file argument from `\inputminted{lang}{file}` (second brace group).
+fn extract_inputminted_files(line: &str) -> Vec<&str> {
+    let mut results = Vec::new();
+    let mut search = line;
+    while let Some(pos) = search.find("\\inputminted") {
+        let after = &search[pos + "\\inputminted".len()..];
+        // skip optional [...]
+        let after = if after.starts_with('[') {
+            match after.find(']') { Some(e) => &after[e + 1..], None => break }
+        } else { after };
+        // skip first {lang}
+        let after = if after.starts_with('{') {
+            match after.find('}') { Some(e) => &after[e + 1..], None => break }
+        } else { break };
+        // extract second {file}
+        if after.starts_with('{') {
+            if let Some(end) = after.find('}') {
+                let arg = after[1..end].trim();
+                if !arg.is_empty() { results.push(arg); }
+                search = &after[end + 1..];
+                continue;
+            }
+        }
+        break;
+    }
+    results
+}
+
 /// Parse `@type{key, ...}` entries from a .bib file.
 fn parse_bib_keys(path: &Path) -> HashSet<String> {
     let mut keys = HashSet::new();
@@ -386,4 +421,94 @@ fn parse_bib_keys(path: &Path) -> HashSet<String> {
         }
     }
     keys
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::fs;
+    use tempfile::TempDir;
+
+    fn setup(tex: &str) -> (TempDir, String) {
+        let dir = TempDir::new().unwrap();
+        fs::write(dir.path().join("main.tex"), tex).unwrap();
+        (dir, "main.tex".to_string())
+    }
+
+    fn has_error(errors: &[LintError], fragment: &str) -> bool {
+        errors.iter().any(|e| e.message.contains(fragment))
+    }
+
+    #[test]
+    fn includegraphics_missing_file_is_error() {
+        let (dir, entry) = setup("\\includegraphics{missing.png}");
+        let errors = lint(dir.path(), &entry, None).unwrap();
+        assert!(has_error(&errors, "missing.png"));
+    }
+
+    #[test]
+    fn includegraphics_existing_file_no_error() {
+        let (dir, entry) = setup("\\includegraphics{img.png}");
+        fs::write(dir.path().join("img.png"), b"").unwrap();
+        let errors = lint(dir.path(), &entry, None).unwrap();
+        assert!(!has_error(&errors, "img.png"));
+    }
+
+    #[test]
+    fn cite_missing_key_is_error() {
+        let (dir, entry) = setup("\\cite{ghost2020}");
+        fs::write(dir.path().join("refs.bib"), "@article{real2020,}").unwrap();
+        let errors = lint(dir.path(), &entry, Some("refs.bib")).unwrap();
+        assert!(has_error(&errors, "ghost2020"));
+    }
+
+    #[test]
+    fn cite_valid_key_no_error() {
+        let (dir, entry) = setup("\\cite{real2020}");
+        fs::write(dir.path().join("refs.bib"), "@article{real2020,}").unwrap();
+        let errors = lint(dir.path(), &entry, Some("refs.bib")).unwrap();
+        assert!(!has_error(&errors, "real2020"));
+    }
+
+    #[test]
+    fn begin_without_end_is_error() {
+        let (dir, entry) = setup("\\begin{figure}");
+        let errors = lint(dir.path(), &entry, None).unwrap();
+        assert!(has_error(&errors, "never closed"));
+    }
+
+    #[test]
+    fn ref_without_label_is_error() {
+        let (dir, entry) = setup("\\ref{fig:missing}");
+        let errors = lint(dir.path(), &entry, None).unwrap();
+        assert!(has_error(&errors, "fig:missing"));
+    }
+
+    #[test]
+    fn mermaid_invalid_pos_is_error() {
+        let (dir, entry) = setup("\\begin{mermaid}[pos=x]\n\\end{mermaid}");
+        let errors = lint(dir.path(), &entry, None).unwrap();
+        assert!(has_error(&errors, "invalid pos"));
+    }
+
+    #[test]
+    fn mermaid_without_end_is_error() {
+        let (dir, entry) = setup("\\begin{mermaid}");
+        let errors = lint(dir.path(), &entry, None).unwrap();
+        assert!(has_error(&errors, "without matching \\end{mermaid}"));
+    }
+
+    #[test]
+    fn lstinputlisting_missing_file_is_error() {
+        let (dir, entry) = setup("\\lstinputlisting{code.py}");
+        let errors = lint(dir.path(), &entry, None).unwrap();
+        assert!(has_error(&errors, "code.py"));
+    }
+
+    #[test]
+    fn inputminted_missing_file_is_error() {
+        let (dir, entry) = setup("\\inputminted{python}{code.py}");
+        let errors = lint(dir.path(), &entry, None).unwrap();
+        assert!(has_error(&errors, "code.py"));
+    }
 }
