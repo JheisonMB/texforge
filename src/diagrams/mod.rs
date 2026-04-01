@@ -163,39 +163,67 @@ fn resolve_tex(root: &Path, input: &str) -> PathBuf {
     if p.extension().is_some() { p } else { p.with_extension("tex") }
 }
 
-/// Mirror non-.tex asset files into build/ so tectonic resolves relative paths.
-/// Skips the build/ directory itself to avoid recursion.
+/// Mirror asset directories into build/ using symlinks (Unix) or file copy (Windows).
+/// Skips .tex files (handled separately) and the build/ dir itself.
 fn mirror_assets(root: &Path, build_dir: &Path) -> Result<()> {
-    for entry in walkdir::WalkDir::new(root)
-        .into_iter()
-        .filter_map(|e| e.ok())
-    {
+    for entry in std::fs::read_dir(root)? {
+        let entry = entry?;
         let path = entry.path();
+        let name = entry.file_name();
+        let name_str = name.to_string_lossy();
 
-        // Skip build/ itself
-        if path.starts_with(build_dir) {
-            continue;
-        }
-        // Skip hidden dirs (.git, etc.)
-        if path.components().any(|c| {
-            c.as_os_str().to_string_lossy().starts_with('.')
-        }) {
+        // Skip hidden, build/, and .tex files at root level
+        if name_str.starts_with('.') || path == build_dir {
             continue;
         }
 
-        if path.is_file() {
+        let dest = build_dir.join(&name);
+
+        if path.is_dir() {
+            // Remove stale symlink/dir if it points somewhere wrong
+            if dest.exists() || dest.symlink_metadata().is_ok() {
+                continue; // already linked
+            }
+            link_or_copy_dir(&path, &dest)?;
+        }
+        // Individual root-level files (e.g. .bib at root) — skip .tex
+        else if path.is_file() {
             let ext = path.extension().and_then(|e| e.to_str()).unwrap_or("");
-            // Only mirror asset files, not .tex (those are handled separately)
             if ext == "tex" {
                 continue;
             }
-            let rel = path.strip_prefix(root).unwrap_or(path);
-            let dest = build_dir.join(rel);
-            if let Some(parent) = dest.parent() {
-                std::fs::create_dir_all(parent)?;
+            if !dest.exists() {
+                std::fs::copy(&path, &dest)?;
             }
-            // Always copy — ensures assets stay in sync with source
-            std::fs::copy(path, &dest)?;
+        }
+    }
+    Ok(())
+}
+
+#[cfg(unix)]
+fn link_or_copy_dir(src: &Path, dest: &Path) -> Result<()> {
+    // Symlink: dest -> ../dirname (relative from build/)
+    let target = std::path::Path::new("..").join(src.file_name().unwrap());
+    std::os::unix::fs::symlink(&target, dest)
+        .with_context(|| format!("Failed to symlink {} -> {}", dest.display(), target.display()))
+}
+
+#[cfg(not(unix))]
+fn link_or_copy_dir(src: &Path, dest: &Path) -> Result<()> {
+    // Windows fallback: recursive copy
+    copy_dir_recursive(src, dest)
+}
+
+#[cfg(not(unix))]
+fn copy_dir_recursive(src: &Path, dest: &Path) -> Result<()> {
+    std::fs::create_dir_all(dest)?;
+    for entry in walkdir::WalkDir::new(src).into_iter().filter_map(|e| e.ok()) {
+        let rel = entry.path().strip_prefix(src).unwrap();
+        let target = dest.join(rel);
+        if entry.file_type().is_dir() {
+            std::fs::create_dir_all(&target)?;
+        } else {
+            std::fs::copy(entry.path(), &target)?;
         }
     }
     Ok(())
