@@ -222,6 +222,12 @@ fn current_target() -> Result<&'static str> {
     return Ok("aarch64-apple-darwin");
     #[cfg(all(target_os = "windows", target_arch = "x86_64"))]
     return Ok("x86_64-pc-windows-msvc");
-    #[allow(unreachable_code)]
+    #[cfg(not(any(
+        all(target_os = "linux", target_arch = "x86_64"),
+        all(target_os = "linux", target_arch = "aarch64"),
+        all(target_os = "macos", target_arch = "x86_64"),
+        all(target_os = "macos", target_arch = "aarch64"),
+        all(target_os = "windows", target_arch = "x86_64"),
+    )))]
     anyhow::bail!("Unsupported platform for automatic tectonic installation")
 }
