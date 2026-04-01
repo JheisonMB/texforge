@@ -1,6 +1,6 @@
 [package]
 name = "texforge"
-version = "0.1.0"
+version = "0.2.0"
 edition = "2021"
 rust-version = "1.75"
 description = "Self-contained LaTeX to PDF compiler CLI"
@@ -31,11 +31,16 @@ walkdir = "2.5"
 dirs = "6.0"
 
 # HTTP client (template downloads)
-reqwest = { version = "0.13", features = ["blocking"] }
+reqwest = { version = "0.13", features = ["blocking", "json"] }
 
-# Archive extraction (GitHub tarballs)
+# Archive extraction (GitHub tarballs + tectonic zip on Windows)
 flate2 = "1.1"
 tar = "0.4"
+zip = { version = "2", default-features = false, features = ["deflate"] }
+
+# Mermaid diagram rendering
+mermaid-rs-renderer = { version = "0.2", default-features = false }
+resvg = "0.46"
 
 [dev-dependencies]
 tempfile = "3.8"

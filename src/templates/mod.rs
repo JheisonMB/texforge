@@ -153,6 +153,37 @@ pub fn download(name: &str) -> Result<ResolvedTemplate> {
     Ok(ResolvedTemplate { files })
 }
 
+/// List template names available in the remote registry.
+pub fn list_remote() -> Result<Vec<String>> {
+    let url = format!("https://api.github.com/repos/{}/contents", REGISTRY_REPO);
+
+    let response = reqwest::blocking::Client::new()
+        .get(&url)
+        .header("User-Agent", "texforge")
+        .send()
+        .context("Failed to connect to template registry")?;
+
+    if !response.status().is_success() {
+        anyhow::bail!("Registry returned HTTP {}", response.status());
+    }
+
+    #[derive(serde::Deserialize)]
+    struct Entry {
+        name: String,
+        #[serde(rename = "type")]
+        kind: String,
+    }
+
+    let entries: Vec<Entry> = response.json()?;
+    let mut names: Vec<String> = entries
+        .into_iter()
+        .filter(|e| e.kind == "dir")
+        .map(|e| e.name)
+        .collect();
+    names.sort();
+    Ok(names)
+}
+
 /// List template names available in local cache.
 pub fn list_cached() -> Result<Vec<String>> {
     let dir = utils::templates_dir()?;

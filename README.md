@@ -13,11 +13,19 @@ Self-contained LaTeX to PDF compiler — one curl, zero friction. No TeX Live, n
 
 ### Quick install (recommended)
 
+**Linux / macOS:**
+
 ```bash
 curl -fsSL https://raw.githubusercontent.com/JheisonMB/texforge/main/install.sh | sh
 ```
 
-This downloads and installs both `texforge` and `tectonic` (the LaTeX engine). Nothing else needed. No Rust toolchain required.
+**Windows (PowerShell):**
+
+```powershell
+irm https://raw.githubusercontent.com/JheisonMB/texforge/main/install.ps1 | iex
+```
+
+This downloads and installs `texforge`. No Rust toolchain required. Tectonic (the LaTeX engine) is installed automatically on first build.
 
 You can customize the install:
 
@@ -29,17 +37,18 @@ VERSION=0.1.0 curl -fsSL https://raw.githubusercontent.com/JheisonMB/texforge/ma
 INSTALL_DIR=/usr/local/bin curl -fsSL https://raw.githubusercontent.com/JheisonMB/texforge/main/install.sh | sh
 ```
 
+```powershell
+# Pin a specific version (PowerShell)
+$env:VERSION="0.1.0"; irm https://raw.githubusercontent.com/JheisonMB/texforge/main/install.ps1 | iex
+```
+
 ### Via cargo
 
 ```bash
 cargo install texforge
 ```
 
-**Note:** This only installs texforge. You also need tectonic for compilation:
-
-```bash
-cargo install tectonic
-```
+Tectonic (the LaTeX engine) is installed automatically on first build. No extra steps needed.
 
 Available on [crates.io](https://crates.io/crates/texforge).
 
@@ -72,6 +81,9 @@ texforge fmt
 
 # Build to PDF
 texforge build
+
+# Remove build artifacts
+texforge clean
 ```
 
 ---
@@ -82,11 +94,14 @@ texforge build
 |---|---|
 | `texforge new <name>` | Create new project from template |
 | `texforge new <name> -t <template>` | Create with specific template |
+| `texforge init` | Initialize texforge in an existing LaTeX project |
 | `texforge build` | Compile to PDF |
+| `texforge clean` | Remove build artifacts |
 | `texforge fmt` | Format .tex files |
 | `texforge fmt --check` | Check formatting without modifying |
 | `texforge check` | Lint without compiling |
 | `texforge template list` | List installed templates |
+| `texforge template list --all` | List installed + available in registry |
 | `texforge template add <name>` | Download template from registry |
 | `texforge template remove <name>` | Remove installed template |
 | `texforge template validate <name>` | Verify template compatibility |
@@ -197,7 +212,7 @@ texforge fmt --check   # check without modifying (CI-friendly)
 ```
 ~/.texforge/
   bin/
-    tectonic            # LaTeX engine (installed by install.sh)
+    tectonic            # LaTeX engine (auto-installed on first build)
   templates/
     general/            # Cached templates
     apa-general/
@@ -230,10 +245,6 @@ texforge fmt --check   # check without modifying (CI-friendly)
 | LaTeX engine | `tectonic` (external binary) |
 
 ---
-
-## Roadmap
-
-See [texforge-spec.md](texforge-spec.md) for the complete specification and roadmap.
 
 ---
 

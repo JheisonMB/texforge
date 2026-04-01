@@ -1,13 +1,12 @@
 #!/bin/sh
-# install.sh — download and install texforge + tectonic from GitHub Releases
+# install.sh — download and install texforge from GitHub Releases
+# tectonic (LaTeX engine) is installed automatically on first build
 # Usage: curl -fsSL https://raw.githubusercontent.com/JheisonMB/texforge/main/install.sh | sh
 set -eu
 
 REPO="JheisonMB/texforge"
 BINARY="texforge"
-TECTONIC_VERSION="0.15.0+20251006"
 INSTALL_DIR="${INSTALL_DIR:-$HOME/.local/bin}"
-TEXFORGE_DIR="$HOME/.texforge/bin"
 
 info() { printf '  \033[1;34m%s\033[0m %s\n' "$1" "$2"; }
 error() { printf '  \033[1;31merror:\033[0m %s\n' "$1" >&2; exit 1; }
@@ -35,34 +34,7 @@ TMPDIR="$(mktemp -d)"
 trap 'rm -rf "$TMPDIR"' EXIT
 
 # ============================================================
-# 1. Install tectonic (LaTeX engine)
-# ============================================================
-
-if command -v tectonic >/dev/null 2>&1; then
-  info "tectonic" "already installed ($(tectonic --version 2>/dev/null || echo 'unknown version'))"
-elif [ -x "$TEXFORGE_DIR/tectonic" ]; then
-  info "tectonic" "already installed at $TEXFORGE_DIR/tectonic"
-else
-  info "tectonic" "installing v${TECTONIC_VERSION}..."
-
-  TECTONIC_ARCHIVE="tectonic-${TECTONIC_VERSION}-${TARGET}.tar.gz"
-  TECTONIC_URL="https://github.com/tectonic-typesetting/tectonic/releases/download/continuous/${TECTONIC_ARCHIVE}"
-
-  info "download" "$TECTONIC_URL"
-  HTTP_CODE=$(curl -fSL -w '%{http_code}' -o "$TMPDIR/$TECTONIC_ARCHIVE" "$TECTONIC_URL" 2>/dev/null) || true
-  [ "$HTTP_CODE" = "200" ] || error "Tectonic download failed (HTTP $HTTP_CODE). URL:\n  $TECTONIC_URL"
-
-  tar xzf "$TMPDIR/$TECTONIC_ARCHIVE" -C "$TMPDIR"
-  [ -f "$TMPDIR/tectonic" ] || error "Tectonic binary not found in archive"
-
-  mkdir -p "$TEXFORGE_DIR"
-  mv "$TMPDIR/tectonic" "$TEXFORGE_DIR/tectonic"
-  chmod +x "$TEXFORGE_DIR/tectonic"
-  info "installed" "$TEXFORGE_DIR/tectonic"
-fi
-
-# ============================================================
-# 2. Install texforge
+# 1. Install texforge
 # ============================================================
 
 # --- resolve latest version ---
@@ -94,17 +66,13 @@ chmod +x "$INSTALL_DIR/$BINARY"
 info "installed" "$INSTALL_DIR/$BINARY"
 
 # ============================================================
-# 3. Ensure PATH includes both directories
+# 2. Ensure PATH
 # ============================================================
 
 PATHS_TO_ADD=""
 case ":$PATH:" in
   *":$INSTALL_DIR:"*) ;;
   *) PATHS_TO_ADD="$INSTALL_DIR" ;;
-esac
-case ":$PATH:" in
-  *":$TEXFORGE_DIR:"*) ;;
-  *) PATHS_TO_ADD="$PATHS_TO_ADD $TEXFORGE_DIR" ;;
 esac
 
 if [ -n "$PATHS_TO_ADD" ]; then
@@ -125,11 +93,10 @@ if [ -n "$PATHS_TO_ADD" ]; then
 fi
 
 # ============================================================
-# 4. Verify
+# 3. Verify
 # ============================================================
 
 info "done" "$($INSTALL_DIR/$BINARY --version 2>/dev/null || echo "$BINARY installed")"
-TECTONIC_BIN=$(command -v tectonic 2>/dev/null || echo "$TEXFORGE_DIR/tectonic")
-info "tectonic" "$($TECTONIC_BIN --version 2>/dev/null || echo "installed")"
 echo ""
 info "ready" "Run 'texforge new my-project' to get started!"
+info "note"  "tectonic (LaTeX engine) will be installed automatically on first build"

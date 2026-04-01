@@ -64,7 +64,7 @@ bibliografia = "bib/references.bib"
 }
 
 /// Validate project name: no empty, no path traversal, no special chars.
-fn validate_project_name(name: &str) -> Result<()> {
+pub(crate) fn validate_project_name(name: &str) -> Result<()> {
     if name.is_empty() {
         anyhow::bail!("Project name cannot be empty");
     }
@@ -105,4 +105,34 @@ fn validate_project_name(name: &str) -> Result<()> {
     }
 
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn empty_name_is_error() {
+        assert!(validate_project_name("").is_err());
+    }
+
+    #[test]
+    fn name_with_spaces_is_error() {
+        assert!(validate_project_name("my project").is_err());
+    }
+
+    #[test]
+    fn name_with_dotdot_is_error() {
+        assert!(validate_project_name("../evil").is_err());
+    }
+
+    #[test]
+    fn name_with_slash_is_error() {
+        assert!(validate_project_name("a/b").is_err());
+    }
+
+    #[test]
+    fn valid_name_is_ok() {
+        assert!(validate_project_name("mi-tesis").is_ok());
+    }
 }

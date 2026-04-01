@@ -15,6 +15,10 @@ pub struct Cli {
 
 #[derive(Subcommand)]
 enum Commands {
+    /// Remove build artifacts
+    Clean,
+    /// Initialize a texforge project in the current directory
+    Init,
     /// Create a new project from a template
     New {
         /// Project name
@@ -43,7 +47,11 @@ enum Commands {
 #[derive(Subcommand)]
 enum TemplateAction {
     /// List available templates
-    List,
+    List {
+        /// Also show templates available in the remote registry
+        #[arg(long)]
+        all: bool,
+    },
     /// Add a template from URL or registry
     Add { source: String },
     /// Remove a template
@@ -55,12 +63,14 @@ enum TemplateAction {
 impl Cli {
     pub fn execute(self) -> Result<()> {
         match self.command {
+            Commands::Clean => commands::clean::execute(),
+            Commands::Init => commands::init::execute(),
             Commands::New { name, template } => commands::new::execute(&name, template.as_deref()),
             Commands::Build => commands::build::execute(),
             Commands::Fmt { check } => commands::fmt::execute(check),
             Commands::Check => commands::check::execute(),
             Commands::Template { action } => match action {
-                TemplateAction::List => commands::template::list(),
+                TemplateAction::List { all } => commands::template::list(all),
                 TemplateAction::Add { source } => commands::template::add(&source),
                 TemplateAction::Remove { name } => commands::template::remove(&name),
                 TemplateAction::Validate { name } => commands::template::validate(&name),

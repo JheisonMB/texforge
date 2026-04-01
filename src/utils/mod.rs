@@ -18,19 +18,24 @@ pub fn templates_dir() -> anyhow::Result<std::path::PathBuf> {
     Ok(dir)
 }
 
-/// Find all .tex files in a directory
+/// Find all .tex files in a directory, excluding build/
 pub fn find_tex_files(root: &Path) -> anyhow::Result<Vec<std::path::PathBuf>> {
     let mut files = Vec::new();
+    let build_dir = root.join("build");
 
     for entry in walkdir::WalkDir::new(root)
         .follow_links(true)
         .into_iter()
         .filter_map(|e| e.ok())
     {
+        let path = entry.path();
+        if path.starts_with(&build_dir) {
+            continue;
+        }
         if entry.file_type().is_file() {
-            if let Some(ext) = entry.path().extension() {
+            if let Some(ext) = path.extension() {
                 if ext == "tex" {
-                    files.push(entry.path().to_path_buf());
+                    files.push(path.to_path_buf());
                 }
             }
         }
