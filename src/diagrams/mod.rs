@@ -36,48 +36,69 @@ pub fn process(root: &Path, entry: &str) -> Result<PathBuf> {
         std::fs::write(&dest, processed)?;
     }
 
-    // Mirror asset files (non-.tex, non-build) so tectonic resolves relative paths
-    mirror_assets(root, &build_dir)?;
+    // Mirror asset files so tectonic resolves relative paths
+    crate::utils::mirror_assets(root, &build_dir)?;
 
     Ok(build_dir.join(entry))
 }
 
 /// Replace all `\begin{mermaid}[opts]...\end{mermaid}` with figure environments.
 fn render_diagrams(content: &str, diagrams_dir: &Path, counter: &mut usize) -> Result<String> {
+    let content = render_env(content, "mermaid", diagrams_dir, counter, |src| {
+        let svg = mermaid_rs_renderer::render(src)
+            .map_err(|e| anyhow::anyhow!("Mermaid render error: {}", e))?;
+        svg_to_png(&svg).context("Failed to convert mermaid SVG to PNG")
+    })?;
+    let content = render_env(&content, "graphviz", diagrams_dir, counter, |src| {
+        let svg = render_graphviz(src)?;
+        svg_to_png(&svg).context("Failed to convert graphviz SVG to PNG")
+    })?;
+    Ok(content)
+}
+
+/// Generic environment renderer: replaces `\begin{env}[opts]...\end{env}` with figure.
+pub(crate) fn render_env(
+    content: &str,
+    env: &str,
+    diagrams_dir: &Path,
+    counter: &mut usize,
+    render_fn: impl Fn(&str) -> Result<Vec<u8>>,
+) -> Result<String> {
+    let begin_tag = format!("\\begin{{{}}}", env);
+    let end_tag = format!("\\end{{{}}}", env);
+
     let mut result = String::new();
     let mut remaining: &str = content;
 
-    while let Some(start) = remaining.find("\\begin{mermaid}") {
+    while let Some(start) = remaining.find(&begin_tag) {
         result.push_str(&remaining[..start]);
 
-        let after_begin = &remaining[start + "\\begin{mermaid}".len()..];
-
-        // Parse optional args: \begin{mermaid}[key=val, ...]
+        let after_begin = &remaining[start + begin_tag.len()..];
         let (opts, after_opts) = parse_opts(after_begin);
 
         let end = after_opts
-            .find("\\end{mermaid}")
-            .context("\\begin{mermaid} without matching \\end{mermaid}")?;
+            .find(&*end_tag)
+            .with_context(|| format!("\\begin{{{}}} without matching \\end{{{}}}", env, env))?;
 
         let diagram_src = after_opts[..end].trim();
 
-        // Render SVG → PNG
-        let svg = mermaid_rs_renderer::render(diagram_src)
-            .map_err(|e| anyhow::anyhow!("Mermaid render error: {}", e))?;
-        let png = svg_to_png(&svg).context("Failed to convert mermaid SVG to PNG")?;
+        // Fail fast: validate pos before doing any rendering work
+        let pos = opts.get("pos").map(String::as_str).unwrap_or("H");
+        if !["H", "t", "b", "h", "p"].contains(&pos) {
+            anyhow::bail!(
+                "Invalid {} option pos='{}' — valid values are: H, t, b, h, p",
+                env,
+                pos
+            );
+        }
+
+        let png = render_fn(diagram_src)?;
 
         *counter += 1;
         let filename = format!("diagram-{}.png", counter);
         std::fs::write(diagrams_dir.join(&filename), &png)?;
 
         // Build figure environment
-        let pos = opts.get("pos").map(String::as_str).unwrap_or("H");
-        if !["H", "t", "b", "h", "p"].contains(&pos) {
-            anyhow::bail!(
-                "Invalid mermaid option pos='{}' — valid values are: H, t, b, h, p",
-                pos
-            );
-        }
         let width = opts
             .get("width")
             .map(String::as_str)
@@ -94,11 +115,33 @@ fn render_diagrams(content: &str, diagrams_dir: &Path, counter: &mut usize) -> R
         fig.push_str("\\end{figure}");
 
         result.push_str(&fig);
-        remaining = &after_opts[end + "\\end{mermaid}".len()..];
+        remaining = &after_opts[end + end_tag.len()..];
     }
 
     result.push_str(remaining);
     Ok(result)
+}
+
+/// Render a DOT/Graphviz diagram to SVG using layout-rs (pure Rust).
+fn render_graphviz(src: &str) -> Result<String> {
+    use layout::backends::svg::SVGWriter;
+    use layout::gv::DotParser;
+    use layout::gv::GraphBuilder;
+    use layout::topo::layout::VisualGraph;
+
+    let mut parser = DotParser::new(src);
+    let graph = parser.process().map_err(|e| {
+        parser.print_error();
+        anyhow::anyhow!("Graphviz parse error: {}", e)
+    })?;
+
+    let mut builder = GraphBuilder::new();
+    builder.visit_graph(&graph);
+    let mut vg: VisualGraph = builder.get();
+
+    let mut svg = SVGWriter::new();
+    vg.do_it(false, false, false, &mut svg);
+    Ok(svg.finalize())
 }
 
 /// Parse `[key=val, key2=val2]` into a map. Returns `(map, rest_of_str)`.
@@ -123,7 +166,7 @@ pub(crate) fn parse_opts(s: &str) -> (HashMap<String, String>, &str) {
     (map, rest)
 }
 
-/// Collect .tex files reachable from entry via \input (non-recursive for simplicity).
+/// Collect .tex files reachable from entry via \input.
 fn collect_tex_files(root: &Path, entry: &str) -> Vec<PathBuf> {
     let mut files = Vec::new();
     collect_recursive(root, entry, &mut files);
@@ -169,80 +212,6 @@ fn resolve_tex(root: &Path, input: &str) -> PathBuf {
     }
 }
 
-/// Mirror asset directories into build/ using symlinks (Unix) or file copy (Windows).
-/// Skips .tex files (handled separately) and the build/ dir itself.
-fn mirror_assets(root: &Path, build_dir: &Path) -> Result<()> {
-    for entry in std::fs::read_dir(root)? {
-        let entry = entry?;
-        let path = entry.path();
-        let name = entry.file_name();
-        let name_str = name.to_string_lossy();
-
-        // Skip hidden, build/, and .tex files at root level
-        if name_str.starts_with('.') || path == build_dir {
-            continue;
-        }
-
-        let dest = build_dir.join(&name);
-
-        if path.is_dir() {
-            // Remove stale symlink/dir if it points somewhere wrong
-            if dest.exists() || dest.symlink_metadata().is_ok() {
-                continue; // already linked
-            }
-            link_or_copy_dir(&path, &dest)?;
-        }
-        // Individual root-level files (e.g. .bib at root) — skip .tex
-        else if path.is_file() {
-            let ext = path.extension().and_then(|e| e.to_str()).unwrap_or("");
-            if ext == "tex" {
-                continue;
-            }
-            if !dest.exists() {
-                std::fs::copy(&path, &dest)?;
-            }
-        }
-    }
-    Ok(())
-}
-
-#[cfg(unix)]
-fn link_or_copy_dir(src: &Path, dest: &Path) -> Result<()> {
-    // Symlink: dest -> ../dirname (relative from build/)
-    let target = std::path::Path::new("..").join(src.file_name().unwrap());
-    std::os::unix::fs::symlink(&target, dest).with_context(|| {
-        format!(
-            "Failed to symlink {} -> {}",
-            dest.display(),
-            target.display()
-        )
-    })
-}
-
-#[cfg(not(unix))]
-fn link_or_copy_dir(src: &Path, dest: &Path) -> Result<()> {
-    // Windows fallback: recursive copy
-    copy_dir_recursive(src, dest)
-}
-
-#[cfg(not(unix))]
-fn copy_dir_recursive(src: &Path, dest: &Path) -> Result<()> {
-    std::fs::create_dir_all(dest)?;
-    for entry in walkdir::WalkDir::new(src)
-        .into_iter()
-        .filter_map(|e| e.ok())
-    {
-        let rel = entry.path().strip_prefix(src).unwrap();
-        let target = dest.join(rel);
-        if entry.file_type().is_dir() {
-            std::fs::create_dir_all(&target)?;
-        } else {
-            std::fs::copy(entry.path(), &target)?;
-        }
-    }
-    Ok(())
-}
-
 /// Convert SVG string to PNG bytes at 2x scale for print quality.
 fn svg_to_png(svg: &str) -> Result<Vec<u8>> {
     let options = resvg::usvg::Options::default();
@@ -286,5 +255,41 @@ mod tests {
     fn parse_opts_caption() {
         let (map, _) = parse_opts("[caption=My diagram]");
         assert_eq!(map.get("caption").map(String::as_str), Some("My diagram"));
+    }
+
+    #[test]
+    fn render_graphviz_produces_svg() {
+        let dot = "digraph G { A -> B }";
+        let svg = render_graphviz(dot).unwrap();
+        assert!(
+            svg.contains("<svg"),
+            "expected SVG output, got: {}",
+            &svg[..100.min(svg.len())]
+        );
+    }
+
+    #[test]
+    fn render_env_no_blocks_unchanged() {
+        let content = "hello world";
+        let dir = tempfile::tempdir().unwrap();
+        let mut counter = 0;
+        let result = render_env(content, "graphviz", dir.path(), &mut counter, |_| {
+            Ok(vec![])
+        })
+        .unwrap();
+        assert_eq!(result, content);
+        assert_eq!(counter, 0);
+    }
+
+    #[test]
+    fn render_env_invalid_pos_returns_error() {
+        let content = "\\begin{graphviz}[pos=Z]\ndigraph G{}\n\\end{graphviz}";
+        let dir = tempfile::tempdir().unwrap();
+        let mut counter = 0;
+        let err = render_env(content, "graphviz", dir.path(), &mut counter, |_| {
+            Ok(vec![1, 2, 3])
+        })
+        .unwrap_err();
+        assert!(err.to_string().contains("pos='Z'"));
     }
 }

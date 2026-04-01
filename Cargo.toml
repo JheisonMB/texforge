@@ -1,6 +1,6 @@
 [package]
 name = "texforge"
-version = "0.2.0"
+version = "0.3.0"
 edition = "2021"
 rust-version = "1.75"
 description = "Self-contained LaTeX to PDF compiler CLI"
@@ -41,6 +41,9 @@ zip = { version = "2", default-features = false, features = ["deflate"] }
 # Mermaid diagram rendering
 mermaid-rs-renderer = { version = "0.2", default-features = false }
 resvg = "0.46"
+
+# Graphviz/DOT diagram rendering
+layout-rs = "0.1"
 
 [dev-dependencies]
 tempfile = "3.8"

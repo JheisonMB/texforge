@@ -97,18 +97,41 @@ fn parse_errors(raw: &str) -> Vec<CompileError> {
     errors
 }
 
-/// Find the tectonic binary in PATH or known locations.
+/// Find the tectonic binary in PATH or known locations, auto-installing if needed.
 fn find_tectonic() -> Result<std::path::PathBuf> {
-    // Check PATH
-    if let Ok(output) = Command::new("which").arg("tectonic").output() {
+    if let Some(path) = locate_tectonic() {
+        return Ok(path);
+    }
+    eprintln!("Tectonic not found. Installing automatically...");
+    let dest = tectonic_managed_path()?;
+    install_tectonic(&dest)?;
+    Ok(dest)
+}
+
+/// Locate tectonic in PATH or known install locations without installing.
+fn locate_tectonic() -> Option<std::path::PathBuf> {
+    // Check PATH using platform-appropriate which/where
+    #[cfg(unix)]
+    let which_cmd = "which";
+    #[cfg(not(unix))]
+    let which_cmd = "where";
+
+    if let Ok(output) = Command::new(which_cmd).arg("tectonic").output() {
         if output.status.success() {
-            let path = String::from_utf8_lossy(&output.stdout).trim().to_string();
-            return Ok(path.into());
+            let path = String::from_utf8_lossy(&output.stdout)
+                .lines()
+                .next()
+                .unwrap_or("")
+                .trim()
+                .to_string();
+            if !path.is_empty() {
+                return Some(path.into());
+            }
         }
     }
 
-    // Check known locations (including texforge-managed install)
-    for candidate in [
+    // Check known locations
+    [
         dirs::home_dir().map(|h| h.join(".texforge/bin/tectonic")),
         dirs::home_dir().map(|h| h.join(".cargo/bin/tectonic")),
         Some("/usr/local/bin/tectonic".into()),
@@ -116,15 +139,112 @@ fn find_tectonic() -> Result<std::path::PathBuf> {
     ]
     .into_iter()
     .flatten()
-    {
-        if candidate.exists() {
-            return Ok(candidate);
-        }
+    .find(|p| p.exists())
+}
+
+fn tectonic_managed_path() -> Result<std::path::PathBuf> {
+    dirs::home_dir()
+        .map(|h| h.join(".texforge/bin/tectonic"))
+        .ok_or_else(|| anyhow::anyhow!("Could not determine home directory"))
+}
+
+/// Download and install tectonic to the given path.
+fn install_tectonic(dest: &std::path::Path) -> Result<()> {
+    let target = current_target()?;
+    let version = "0.15.0";
+    let (filename, is_zip) = if target.contains("windows") {
+        (format!("tectonic-{}-{}.zip", version, target), true)
+    } else {
+        (format!("tectonic-{}-{}.tar.gz", version, target), false)
+    };
+
+    let url = format!(
+        "https://github.com/tectonic-typesetting/tectonic/releases/download/tectonic%40{}/{}",
+        version, filename
+    );
+
+    eprintln!("Downloading tectonic {}...", version);
+
+    let response = reqwest::blocking::Client::new()
+        .get(&url)
+        .header("User-Agent", "texforge")
+        .send()
+        .context("Failed to download tectonic")?;
+
+    if !response.status().is_success() {
+        anyhow::bail!(
+            "Failed to download tectonic: HTTP {}\nURL: {}",
+            response.status(),
+            url
+        );
     }
 
-    anyhow::bail!(
-        "Tectonic not found. Install everything with:\n\
-         \n  curl -fsSL https://raw.githubusercontent.com/JheisonMB/texforge/main/install.sh | sh\n\
-         \nor install tectonic separately: cargo install tectonic"
-    );
+    let bytes = response.bytes()?;
+
+    if let Some(parent) = dest.parent() {
+        std::fs::create_dir_all(parent)?;
+    }
+
+    if is_zip {
+        install_from_zip(&bytes, dest)?;
+    } else {
+        install_from_targz(&bytes, dest)?;
+    }
+
+    #[cfg(unix)]
+    {
+        use std::os::unix::fs::PermissionsExt;
+        std::fs::set_permissions(dest, std::fs::Permissions::from_mode(0o755))?;
+    }
+
+    eprintln!("✅ Tectonic installed to {}", dest.display());
+    Ok(())
+}
+
+fn install_from_targz(bytes: &[u8], dest: &std::path::Path) -> Result<()> {
+    let decoder = flate2::read::GzDecoder::new(bytes);
+    let mut archive = tar::Archive::new(decoder);
+    for entry in archive.entries()? {
+        let mut entry = entry?;
+        let path = entry.path()?.to_string_lossy().to_string();
+        if path.ends_with("tectonic") || path == "tectonic" {
+            std::io::copy(&mut entry, &mut std::fs::File::create(dest)?)?;
+            return Ok(());
+        }
+    }
+    anyhow::bail!("tectonic binary not found in archive")
+}
+
+fn install_from_zip(bytes: &[u8], dest: &std::path::Path) -> Result<()> {
+    let cursor = std::io::Cursor::new(bytes);
+    let mut archive = zip::ZipArchive::new(cursor)?;
+    for i in 0..archive.len() {
+        let mut file = archive.by_index(i)?;
+        if file.name().ends_with("tectonic.exe") || file.name() == "tectonic.exe" {
+            std::io::copy(&mut file, &mut std::fs::File::create(dest)?)?;
+            return Ok(());
+        }
+    }
+    anyhow::bail!("tectonic.exe not found in archive")
+}
+
+fn current_target() -> Result<&'static str> {
+    #[cfg(all(target_os = "linux", target_arch = "x86_64"))]
+    return Ok("x86_64-unknown-linux-musl");
+    #[cfg(all(target_os = "linux", target_arch = "aarch64"))]
+    return Ok("aarch64-unknown-linux-musl");
+    #[cfg(all(target_os = "macos", target_arch = "x86_64"))]
+    return Ok("x86_64-apple-darwin");
+    #[cfg(all(target_os = "macos", target_arch = "aarch64"))]
+    return Ok("aarch64-apple-darwin");
+    #[cfg(all(target_os = "windows", target_arch = "x86_64"))]
+    return Ok("x86_64-pc-windows-msvc");
+    #[cfg(not(any(
+        all(target_os = "linux", target_arch = "x86_64"),
+        all(target_os = "linux", target_arch = "aarch64"),
+        all(target_os = "macos", target_arch = "x86_64"),
+        all(target_os = "macos", target_arch = "aarch64"),
+        all(target_os = "windows", target_arch = "x86_64"),
+    )))]
+    anyhow::bail!("Unsupported platform for automatic tectonic installation")
 }
