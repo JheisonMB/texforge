@@ -28,7 +28,14 @@ enum Commands {
         template: Option<String>,
     },
     /// Compile project to PDF
-    Build,
+    Build {
+        /// Watch for file changes and rebuild automatically
+        #[arg(long)]
+        watch: bool,
+        /// Debounce delay in seconds before rebuilding (default: 10)
+        #[arg(long, default_value = "10")]
+        delay: u64,
+    },
     /// Format .tex files
     Fmt {
         /// Check formatting without modifying files
@@ -66,7 +73,13 @@ impl Cli {
             Commands::Clean => commands::clean::execute(),
             Commands::Init => commands::init::execute(),
             Commands::New { name, template } => commands::new::execute(&name, template.as_deref()),
-            Commands::Build => commands::build::execute(),
+            Commands::Build { watch, delay } => {
+                if watch {
+                    commands::build::watch(delay)
+                } else {
+                    commands::build::execute()
+                }
+            }
             Commands::Fmt { check } => commands::fmt::execute(check),
             Commands::Check => commands::check::execute(),
             Commands::Template { action } => match action {
