@@ -72,7 +72,13 @@ rm -f ~/.local/bin/texforge  # texforge binary
 rm -rf ~/.texforge/           # tectonic engine + cached templates
 ```
 
----
+## Skill
+
+An [texforge Skill](https://skills.sh/jheisonmb/skills/texforge) is available for AI-assisted LaTeX workflows with texforge:
+
+```bash
+npx skills add https://github.com/jheisonmb/skills --skill texforge
+```
 
 ## Quick Start
 
@@ -93,6 +99,35 @@ texforge build
 texforge clean
 ```
 
+## Workflow
+
+```mermaid
+sequenceDiagram
+    actor User
+    participant CLI as texforge
+    participant Tectonic
+
+    User->>CLI: texforge new my-doc
+    CLI-->>User: project scaffolded
+
+    alt Existing LaTeX project
+        User->>CLI: texforge init
+        CLI-->>User: project.toml generated
+    end
+
+    User->>CLI: texforge check
+    CLI-->>User: errors with file:line + suggestion
+
+    User->>CLI: texforge fmt
+    CLI-->>User: .tex files formatted in place
+
+    User->>CLI: texforge build
+    Note over CLI: render embedded diagrams to PNG
+    CLI->>Tectonic: compile build/main.tex
+    Note over CLI,Tectonic: auto-installs tectonic on first run
+    Tectonic-->>User: build/main.pdf
+```
+
 ---
 
 ## Commands
@@ -103,6 +138,7 @@ texforge clean
 | `texforge new <name> -t <template>` | Create with specific template |
 | `texforge init` | Initialize texforge in an existing LaTeX project |
 | `texforge build` | Compile to PDF |
+| `texforge build --watch` | Watch for changes and rebuild automatically |
 | `texforge clean` | Remove build artifacts |
 | `texforge fmt` | Format .tex files |
 | `texforge fmt --check` | Check formatting without modifying |
@@ -115,61 +151,9 @@ texforge clean
 
 ---
 
-## Project Structure
-
-`texforge new` generates this structure:
-
-```
-mi-tesis/
-├── project.toml          # Project configuration
-├── main.tex              # Entry point
-├── sections/             # Document sections
-│   └── body.tex
-├── bib/
-│   └── references.bib    # Bibliography
-└── assets/
-    └── images/           # Images and resources
-```
-
-### `project.toml`
-
-```toml
-[documento]
-titulo = "mi-tesis"
-autor = "Author"
-template = "general"
-
-[compilacion]
-entry = "main.tex"
-bibliografia = "bib/references.bib"
-```
-
----
-
 ## Templates
 
-Templates are managed through the [texforge-templates](https://github.com/JheisonMB/texforge-templates) registry. The `general` template is embedded in the binary and works offline.
-
-| Template | Description |
-|---|---|
-| `general` | Generic article (default, embedded) |
-| `apa-general` | APA 7th edition report |
-| `apa-unisalle` | Universidad de La Salle thesis |
-| `ieee` | IEEE journal paper |
-| `letter` | Formal Spanish correspondence |
-
-```bash
-# List installed templates
-texforge template list
-
-# Download a template
-texforge template add apa-general
-
-# Create project with specific template
-texforge new mi-tesis -t apa-general
-```
-
-Templates are cached locally in `~/.texforge/templates/` after first download.
+Templates are managed through the [texforge-templates](https://github.com/JheisonMB/texforge-templates) registry. The `general` template is embedded in the binary and works offline. Run `texforge template list --all` to see all available templates.
 
 ---
 
@@ -212,6 +196,19 @@ Both rendered to PNG via pure Rust — no browser, no Node.js, no `dot` binary r
 | `width` | `\linewidth` | Image width |
 | `pos` | `H` | Figure placement (`H`, `t`, `b`, `h`, `p`) |
 | `caption` | _(none)_ | Figure caption |
+
+---
+
+## Watch Mode
+
+`texforge build --watch` watches for `.tex` file changes and rebuilds automatically:
+
+```bash
+texforge build --watch            # rebuild after 10s of inactivity (default)
+texforge build --watch --delay 5  # custom delay in seconds
+```
+
+The terminal stays open showing build output. Press `Ctrl+C` to stop.
 
 ---
 
@@ -295,8 +292,6 @@ texforge fmt --check   # check without modifying (CI-friendly)
 | Mermaid renderer | `mermaid-rs-renderer` |
 | Graphviz renderer | `layout-rs` |
 | SVG → PNG | `resvg` |
-
----
 
 ---
 
