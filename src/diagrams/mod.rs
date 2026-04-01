@@ -69,7 +69,13 @@ fn render_diagrams(content: &str, diagrams_dir: &Path, counter: &mut usize) -> R
         std::fs::write(diagrams_dir.join(&filename), &png)?;
 
         // Build figure environment
-        let pos     = opts.get("pos").map(String::as_str).unwrap_or("H");
+        let pos = opts.get("pos").map(String::as_str).unwrap_or("H");
+        if !["H", "t", "b", "h", "p"].contains(&pos) {
+            anyhow::bail!(
+                "Invalid mermaid option pos='{}' — valid values are: H, t, b, h, p",
+                pos
+            );
+        }
         let width   = opts.get("width").map(String::as_str).unwrap_or("\\linewidth");
         let caption = opts.get("caption");
         let rel_path = format!("diagrams/{}", filename);
