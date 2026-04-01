@@ -117,3 +117,47 @@ fn extract_env_name(line: &str) -> Option<String> {
     let end = line[start..].find('}')?;
     Some(line[start..start + end].to_string())
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn empty_input_returns_single_newline() {
+        assert_eq!(format(""), "\n");
+    }
+
+    #[test]
+    fn trailing_newline_always_present() {
+        let out = format("hello");
+        assert!(out.ends_with('\n'));
+    }
+
+    #[test]
+    fn indentation_inside_environment() {
+        let src = "\\begin{document}\nhello\n\\end{document}";
+        let out = format(src);
+        assert!(out.contains("  hello"), "expected indented 'hello', got:\n{}", out);
+    }
+
+    #[test]
+    fn multiple_blank_lines_collapsed() {
+        let src = "a\n\n\n\nb";
+        let out = format(src);
+        assert_eq!(out, "a\n\nb\n");
+    }
+
+    #[test]
+    fn structural_commands_not_indented() {
+        let src = "\\begin{document}\n\\section{Intro}\n\\end{document}";
+        let out = format(src);
+        assert!(out.contains("\n\\section{Intro}\n"), "got:\n{}", out);
+    }
+
+    #[test]
+    fn verbatim_content_preserved() {
+        let src = "\\begin{verbatim}\n  raw   content\n\\end{verbatim}";
+        let out = format(src);
+        assert!(out.contains("  raw   content"), "got:\n{}", out);
+    }
+}

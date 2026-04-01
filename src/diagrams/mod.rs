@@ -99,7 +99,7 @@ fn render_diagrams(content: &str, diagrams_dir: &Path, counter: &mut usize) -> R
 }
 
 /// Parse `[key=val, key2=val2]` into a map. Returns (map, rest_of_str).
-fn parse_opts(s: &str) -> (HashMap<String, String>, &str) {
+pub(crate) fn parse_opts(s: &str) -> (HashMap<String, String>, &str) {
     let s = s.trim_start_matches('\n').trim_start_matches('\r');
     if !s.starts_with('[') {
         return (HashMap::new(), s);
@@ -245,4 +245,29 @@ fn svg_to_png(svg: &str) -> Result<Vec<u8>> {
     resvg::render(&tree, resvg::tiny_skia::Transform::from_scale(scale, scale), &mut pixmap.as_mut());
 
     pixmap.encode_png().context("Failed to encode PNG")
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn parse_opts_no_brackets_returns_empty_map() {
+        let (map, rest) = parse_opts("hello");
+        assert!(map.is_empty());
+        assert_eq!(rest, "hello");
+    }
+
+    #[test]
+    fn parse_opts_width_and_pos() {
+        let (map, _) = parse_opts("[width=0.5\\linewidth, pos=t]");
+        assert_eq!(map.get("width").map(String::as_str), Some("0.5\\linewidth"));
+        assert_eq!(map.get("pos").map(String::as_str), Some("t"));
+    }
+
+    #[test]
+    fn parse_opts_caption() {
+        let (map, _) = parse_opts("[caption=My diagram]");
+        assert_eq!(map.get("caption").map(String::as_str), Some("My diagram"));
+    }
 }
