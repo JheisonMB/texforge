@@ -6,6 +6,7 @@
 mod cli;
 mod commands;
 mod compiler;
+mod diagrams;
 mod domain;
 mod formatter;
 mod linter;

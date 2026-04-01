@@ -81,6 +81,9 @@ texforge fmt
 
 # Build to PDF
 texforge build
+
+# Remove build artifacts
+texforge clean
 ```
 
 ---
@@ -93,6 +96,7 @@ texforge build
 | `texforge new <name> -t <template>` | Create with specific template |
 | `texforge init` | Initialize texforge in an existing LaTeX project |
 | `texforge build` | Compile to PDF |
+| `texforge clean` | Remove build artifacts |
 | `texforge fmt` | Format .tex files |
 | `texforge fmt --check` | Check formatting without modifying |
 | `texforge check` | Lint without compiling |
