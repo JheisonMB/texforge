@@ -11,6 +11,7 @@ use std::path::{Path, PathBuf};
 use anyhow::{Context, Result};
 
 /// Copy all .tex files to `build/`, rendering embedded diagrams in the copies.
+/// Also mirrors non-.tex assets so tectonic can resolve relative paths.
 /// Returns the path to the build copy of `entry`.
 pub fn process(root: &Path, entry: &str) -> Result<PathBuf> {
     let build_dir = root.join("build");
@@ -19,12 +20,10 @@ pub fn process(root: &Path, entry: &str) -> Result<PathBuf> {
     let diagrams_dir = build_dir.join("diagrams");
     std::fs::create_dir_all(&diagrams_dir)?;
 
-    // Counter shared across all files so diagram names are unique
     let mut counter = 0usize;
 
-    // Collect all .tex files reachable from entry
+    // Process .tex files
     let tex_files = collect_tex_files(root, entry);
-
     for src in &tex_files {
         let rel = src.strip_prefix(root).unwrap_or(src);
         let dest = build_dir.join(rel);
@@ -36,6 +35,9 @@ pub fn process(root: &Path, entry: &str) -> Result<PathBuf> {
             .with_context(|| format!("Failed to render diagrams in {}", src.display()))?;
         std::fs::write(&dest, processed)?;
     }
+
+    // Mirror asset files (non-.tex, non-build) so tectonic resolves relative paths
+    mirror_assets(root, &build_dir)?;
 
     Ok(build_dir.join(entry))
 }
@@ -159,6 +161,44 @@ fn extract_inputs(line: &str) -> Vec<&str> {
 fn resolve_tex(root: &Path, input: &str) -> PathBuf {
     let p = root.join(input);
     if p.extension().is_some() { p } else { p.with_extension("tex") }
+}
+
+/// Mirror non-.tex asset files into build/ so tectonic resolves relative paths.
+/// Skips the build/ directory itself to avoid recursion.
+fn mirror_assets(root: &Path, build_dir: &Path) -> Result<()> {
+    for entry in walkdir::WalkDir::new(root)
+        .into_iter()
+        .filter_map(|e| e.ok())
+    {
+        let path = entry.path();
+
+        // Skip build/ itself
+        if path.starts_with(build_dir) {
+            continue;
+        }
+        // Skip hidden dirs (.git, etc.)
+        if path.components().any(|c| {
+            c.as_os_str().to_string_lossy().starts_with('.')
+        }) {
+            continue;
+        }
+
+        if path.is_file() {
+            let ext = path.extension().and_then(|e| e.to_str()).unwrap_or("");
+            // Only mirror asset files, not .tex (those are handled separately)
+            if ext == "tex" {
+                continue;
+            }
+            let rel = path.strip_prefix(root).unwrap_or(path);
+            let dest = build_dir.join(rel);
+            if let Some(parent) = dest.parent() {
+                std::fs::create_dir_all(parent)?;
+            }
+            // Always copy — ensures assets stay in sync with source
+            std::fs::copy(path, &dest)?;
+        }
+    }
+    Ok(())
 }
 
 /// Convert SVG string to PNG bytes at 2x scale for print quality.

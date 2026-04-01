@@ -15,6 +15,8 @@ pub struct Cli {
 
 #[derive(Subcommand)]
 enum Commands {
+    /// Remove build artifacts
+    Clean,
     /// Initialize a texforge project in the current directory
     Init,
     /// Create a new project from a template
@@ -61,6 +63,7 @@ enum TemplateAction {
 impl Cli {
     pub fn execute(self) -> Result<()> {
         match self.command {
+            Commands::Clean => commands::clean::execute(),
             Commands::Init => commands::init::execute(),
             Commands::New { name, template } => commands::new::execute(&name, template.as_deref()),
             Commands::Build => commands::build::execute(),

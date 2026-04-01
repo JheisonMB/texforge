@@ -80,6 +80,7 @@ pub fn lint(root: &Path, entry: &str, bib_file: Option<&str>) -> Result<Vec<Lint
             &mut errors,
         );
         check_environments(&rel, &content, &mut errors);
+        check_mermaid_blocks(&rel, &content, &mut errors);
     }
 
     Ok(errors)
@@ -364,6 +365,61 @@ fn strip_comment(line: &str) -> String {
     }
 
     result
+}
+
+/// Check mermaid blocks: unclosed and invalid pos option.
+fn check_mermaid_blocks(rel: &str, content: &str, errors: &mut Vec<LintError>) {
+    const VALID_POS: &[&str] = &["H", "t", "b", "h", "p"];
+
+    for (i, line) in content.lines().enumerate() {
+        let line_num = i + 1;
+        let trimmed = line.trim();
+
+        if !trimmed.starts_with("\\begin{mermaid}") {
+            continue;
+        }
+
+        // Check for unclosed block
+        let rest = &content[content
+            .lines()
+            .take(i)
+            .map(|l| l.len() + 1)
+            .sum::<usize>()..];
+        if !rest.contains("\\end{mermaid}") {
+            errors.push(LintError {
+                file: rel.to_string(),
+                line: line_num,
+                message: "\\begin{mermaid} without matching \\end{mermaid}".into(),
+                suggestion: Some("Add \\end{mermaid}".into()),
+            });
+            continue;
+        }
+
+        // Check pos option if present
+        if let Some(opts_start) = trimmed.find('[') {
+            if let Some(opts_end) = trimmed.find(']') {
+                let opts = &trimmed[opts_start + 1..opts_end];
+                for part in opts.split(',') {
+                    if let Some((k, v)) = part.split_once('=') {
+                        if k.trim() == "pos" {
+                            let pos = v.trim();
+                            if !VALID_POS.contains(&pos) {
+                                errors.push(LintError {
+                                    file: rel.to_string(),
+                                    line: line_num,
+                                    message: format!(
+                                        "\\begin{{mermaid}} invalid pos='{}' — valid values: H, t, b, h, p",
+                                        pos
+                                    ),
+                                    suggestion: Some("Use pos=H, pos=t, pos=b, pos=h, or pos=p".into()),
+                                });
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
 }
 
 /// Parse `@type{key, ...}` entries from a .bib file.
