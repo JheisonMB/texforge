@@ -99,8 +99,6 @@ texforge clean
 sequenceDiagram
     actor User
     participant CLI as texforge
-    participant Linter
-    participant Diagrams as Diagram Pre-processor
     participant Tectonic
 
     User->>CLI: texforge new my-doc
@@ -112,15 +110,13 @@ sequenceDiagram
     end
 
     User->>CLI: texforge check
-    CLI->>Linter: lint .tex files
-    Linter-->>User: errors with file:line + suggestion
+    CLI-->>User: errors with file:line + suggestion
 
     User->>CLI: texforge fmt
     CLI-->>User: .tex files formatted in place
 
     User->>CLI: texforge build
-    CLI->>Diagrams: render \begin{mermaid} / \begin{graphviz}
-    Diagrams-->>CLI: PNG files in build/diagrams/
+    Note over CLI: render embedded diagrams to PNG
     CLI->>Tectonic: compile build/main.tex
     Note over CLI,Tectonic: auto-installs tectonic on first run
     Tectonic-->>User: build/main.pdf
