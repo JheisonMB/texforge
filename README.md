@@ -65,6 +65,13 @@ cargo build --release
 
 Check the [Releases](https://github.com/JheisonMB/texforge/releases) page for precompiled binaries (Linux x86_64, macOS x86_64/ARM64, Windows x86_64).
 
+### Uninstall
+
+```bash
+rm -f ~/.local/bin/texforge  # texforge binary
+rm -rf ~/.texforge/           # tectonic engine + cached templates
+```
+
 ---
 
 ## Quick Start
