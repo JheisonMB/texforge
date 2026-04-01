@@ -106,6 +106,11 @@ sequenceDiagram
     User->>CLI: texforge new my-doc
     CLI-->>User: project scaffolded
 
+    alt Existing LaTeX project
+        User->>CLI: texforge init
+        CLI-->>User: project.toml generated
+    end
+
     User->>CLI: texforge check
     CLI->>Linter: lint .tex files
     Linter-->>User: errors with file:line + suggestion
