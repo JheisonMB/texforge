@@ -231,10 +231,6 @@ texforge fmt --check   # check without modifying (CI-friendly)
 
 ---
 
-## Roadmap
-
-See [texforge-spec.md](texforge-spec.md) for the complete specification and roadmap.
-
 ---
 
 ## License
