@@ -166,6 +166,48 @@ Templates are cached locally in `~/.texforge/templates/` after first download.
 
 ---
 
+## Diagrams
+
+`texforge build` intercepts embedded diagram environments before compilation. Originals are never modified — diagrams are rendered in `build/` copies.
+
+### Mermaid
+
+```latex
+% Default: width=\linewidth, pos=H, no caption
+\begin{mermaid}
+flowchart LR
+  A[Input] --> B[Process] --> C[Output]
+\end{mermaid}
+
+% With options
+\begin{mermaid}[width=0.6\linewidth, caption=System flow, pos=t]
+flowchart TD
+  X --> Y --> Z
+\end{mermaid}
+```
+
+### Graphviz / DOT
+
+```latex
+\begin{graphviz}[caption=Pipeline]
+digraph G {
+  rankdir=LR
+  A -> B -> C
+  B -> D
+}
+\end{graphviz}
+```
+
+Both rendered to PNG via pure Rust — no browser, no Node.js, no `dot` binary required.
+
+| Option | Default | Description |
+|---|---|---|
+| `width` | `\linewidth` | Image width |
+| `pos` | `H` | Figure placement (`H`, `t`, `b`, `h`, `p`) |
+| `caption` | _(none)_ | Figure caption |
+
+---
+
 ## Linter
 
 `texforge check` runs static analysis without compiling:
@@ -243,6 +285,9 @@ texforge fmt --check   # check without modifying (CI-friendly)
 | Archive extraction | `flate2` + `tar` |
 | File traversal | `walkdir` |
 | LaTeX engine | `tectonic` (external binary) |
+| Mermaid renderer | `mermaid-rs-renderer` |
+| Graphviz renderer | `layout-rs` |
+| SVG → PNG | `resvg` |
 
 ---
 
