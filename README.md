@@ -138,6 +138,7 @@ sequenceDiagram
 | `texforge new <name> -t <template>` | Create with specific template |
 | `texforge init` | Initialize texforge in an existing LaTeX project |
 | `texforge build` | Compile to PDF |
+| `texforge build --watch` | Watch for changes and rebuild automatically |
 | `texforge clean` | Remove build artifacts |
 | `texforge fmt` | Format .tex files |
 | `texforge fmt --check` | Check formatting without modifying |
@@ -195,6 +196,19 @@ Both rendered to PNG via pure Rust — no browser, no Node.js, no `dot` binary r
 | `width` | `\linewidth` | Image width |
 | `pos` | `H` | Figure placement (`H`, `t`, `b`, `h`, `p`) |
 | `caption` | _(none)_ | Figure caption |
+
+---
+
+## Watch Mode
+
+`texforge build --watch` watches for `.tex` file changes and rebuilds automatically:
+
+```bash
+texforge build --watch            # rebuild after 10s of inactivity (default)
+texforge build --watch --delay 5  # custom delay in seconds
+```
+
+The terminal stays open showing build output. Press `Ctrl+C` to stop.
 
 ---
 

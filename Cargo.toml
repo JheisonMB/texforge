@@ -1,6 +1,6 @@
 [package]
 name = "texforge"
-version = "0.3.0"
+version = "0.4.0"
 edition = "2021"
 rust-version = "1.75"
 description = "Self-contained LaTeX to PDF compiler CLI"
@@ -37,6 +37,9 @@ reqwest = { version = "0.13", features = ["blocking", "json"] }
 flate2 = "1.1"
 tar = "0.4"
 zip = { version = "2", default-features = false, features = ["deflate"] }
+
+# File watching for --watch mode
+notify = { version = "7", features = ["macos_fsevent"] }
 
 # Mermaid diagram rendering
 mermaid-rs-renderer = { version = "0.2", default-features = false }
