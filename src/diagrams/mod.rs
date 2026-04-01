@@ -101,15 +101,14 @@ fn render_diagrams(content: &str, diagrams_dir: &Path, counter: &mut usize) -> R
     Ok(result)
 }
 
-/// Parse `[key=val, key2=val2]` into a map. Returns (map, rest_of_str).
+/// Parse `[key=val, key2=val2]` into a map. Returns `(map, rest_of_str)`.
 pub(crate) fn parse_opts(s: &str) -> (HashMap<String, String>, &str) {
     let s = s.trim_start_matches('\n').trim_start_matches('\r');
     if !s.starts_with('[') {
         return (HashMap::new(), s);
     }
-    let end = match s.find(']') {
-        Some(i) => i,
-        None => return (HashMap::new(), s),
+    let Some(end) = s.find(']') else {
+        return (HashMap::new(), s);
     };
     let inner = &s[1..end];
     let rest = &s[end + 1..];

@@ -15,7 +15,7 @@ pub fn execute() -> Result<()> {
     std::fs::create_dir_all(project.root.join("build"))?;
 
     // Pre-process embedded diagrams — works on copies in build/, originals untouched
-    let build_entry = diagrams::process(&project.root, &project.config.compilacion.entry)?;
+    diagrams::process(&project.root, &project.config.compilacion.entry)?;
 
     // Compile from build/ — all assets are mirrored there, diagrams use relative paths
     let build_dir = project.root.join("build");
