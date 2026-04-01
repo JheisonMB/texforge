@@ -12,13 +12,19 @@ pub fn execute() -> Result<()> {
 
     println!("Building project: {}", project.config.documento.titulo);
 
-    // Ensure build directory exists
     std::fs::create_dir_all(project.root.join("build"))?;
 
-    // Pre-process embedded diagrams (mermaid, etc.)
-    diagrams::process(&project.root, &project.config.compilacion.entry)?;
+    // Pre-process embedded diagrams — works on copies in build/, originals untouched
+    let build_entry = diagrams::process(&project.root, &project.config.compilacion.entry)?;
 
-    compiler::compile(&project.root, &project.config.compilacion.entry)?;
+    // Compile from build/ so relative paths resolve correctly
+    let build_dir = project.root.join("build");
+    let entry_filename = std::path::Path::new(&project.config.compilacion.entry)
+        .file_name()
+        .map(|n| n.to_string_lossy().to_string())
+        .unwrap_or(project.config.compilacion.entry.clone());
+
+    compiler::compile(&build_dir, &entry_filename)?;
 
     let pdf_name = std::path::Path::new(&project.config.compilacion.entry).with_extension("pdf");
     println!("✅ build/{}", pdf_name.display());
