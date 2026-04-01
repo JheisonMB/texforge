@@ -33,9 +33,10 @@ dirs = "6.0"
 # HTTP client (template downloads)
 reqwest = { version = "0.13", features = ["blocking", "json"] }
 
-# Archive extraction (GitHub tarballs)
+# Archive extraction (GitHub tarballs + tectonic zip on Windows)
 flate2 = "1.1"
 tar = "0.4"
+zip = { version = "2", default-features = false, features = ["deflate"] }
 
 [dev-dependencies]
 tempfile = "3.8"

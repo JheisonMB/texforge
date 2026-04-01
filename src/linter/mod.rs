@@ -123,6 +123,30 @@ fn check_references(
             }
         }
 
+        for arg in extract_commands(&line, "lstinputlisting") {
+            let path = root.join(arg);
+            if !path.exists() {
+                errors.push(LintError {
+                    file: rel.to_string(),
+                    line: line_num,
+                    message: format!("\\lstinputlisting{{{}}} — file not found", arg),
+                    suggestion: None,
+                });
+            }
+        }
+
+        for args in extract_commands_two_args(&line, "inputminted") {
+            let path = root.join(args);
+            if !path.exists() {
+                errors.push(LintError {
+                    file: rel.to_string(),
+                    line: line_num,
+                    message: format!("\\inputminted{{...}}{{{}}} — file not found", args),
+                    suggestion: None,
+                });
+            }
+        }
+
         if bib_file.is_some() {
             for arg in extract_commands(&line, "cite") {
                 for key in arg.split(',') {
@@ -202,6 +226,53 @@ fn check_environments(rel: &str, content: &str, errors: &mut Vec<LintError>) {
             suggestion: Some(format!("Add \\end{{{}}}", env)),
         });
     }
+}
+
+/// Extract the second `{arg}` from `\command{first}{second}` occurrences.
+fn extract_commands_two_args<'a>(line: &'a str, cmd: &str) -> Vec<&'a str> {
+    let mut results = Vec::new();
+    let pattern = format!("\\{}", cmd);
+    let mut search = line;
+
+    while let Some(pos) = search.find(&pattern) {
+        let after = &search[pos + pattern.len()..];
+        // Skip optional args [...]
+        let after = if after.starts_with('[') {
+            match after.find(']') {
+                Some(end) => &after[end + 1..],
+                None => break,
+            }
+        } else {
+            after
+        };
+        // Skip first {arg}
+        let after = if after.starts_with('{') {
+            match after.find('}') {
+                Some(end) => &after[end + 1..],
+                None => {
+                    search = after;
+                    continue;
+                }
+            }
+        } else {
+            search = after;
+            continue;
+        };
+        // Extract second {arg}
+        if after.starts_with('{') {
+            if let Some(end) = after.find('}') {
+                let arg = after[1..end].trim();
+                if !arg.is_empty() {
+                    results.push(arg);
+                }
+                search = &after[end + 1..];
+                continue;
+            }
+        }
+        search = after;
+    }
+
+    results
 }
 
 /// Extract arguments from `\command{arg}` and `\command[opts]{arg}` occurrences in a line.

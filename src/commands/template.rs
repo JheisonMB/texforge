@@ -7,8 +7,7 @@ use crate::templates;
 /// List available templates.
 pub fn list(all: bool) -> Result<()> {
     let cached = templates::list_cached()?;
-    let installed: std::collections::HashSet<&str> =
-        cached.iter().map(String::as_str).collect();
+    let installed: std::collections::HashSet<&str> = cached.iter().map(String::as_str).collect();
 
     println!("Installed:");
     println!("  - general (built-in)");
