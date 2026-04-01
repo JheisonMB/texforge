@@ -164,7 +164,7 @@ pub(crate) fn parse_opts(s: &str) -> (HashMap<String, String>, &str) {
     (map, rest)
 }
 
-/// Collect .tex files reachable from entry via \input (non-recursive for simplicity).
+/// Collect .tex files reachable from entry via \input.
 fn collect_tex_files(root: &Path, entry: &str) -> Vec<PathBuf> {
     let mut files = Vec::new();
     collect_recursive(root, entry, &mut files);

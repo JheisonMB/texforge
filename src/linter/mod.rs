@@ -80,7 +80,7 @@ pub fn lint(root: &Path, entry: &str, bib_file: Option<&str>) -> Result<Vec<Lint
             &mut errors,
         );
         check_environments(&rel, &content, &mut errors);
-        check_mermaid_blocks(&rel, &content, &mut errors);
+        check_diagram_blocks(&rel, &content, "mermaid", &mut errors);
         check_diagram_blocks(&rel, &content, "graphviz", &mut errors);
     }
 
@@ -319,12 +319,7 @@ fn strip_comment(line: &str) -> String {
     result
 }
 
-/// Check mermaid blocks: unclosed and invalid pos option.
-fn check_mermaid_blocks(rel: &str, content: &str, errors: &mut Vec<LintError>) {
-    check_diagram_blocks(rel, content, "mermaid", errors);
-}
-
-/// Check diagram blocks (mermaid, graphviz): unclosed and invalid pos option.
+/// Check mermaid/graphviz blocks: unclosed and invalid pos option.
 fn check_diagram_blocks(rel: &str, content: &str, env: &str, errors: &mut Vec<LintError>) {
     const VALID_POS: &[&str] = &["H", "t", "b", "h", "p"];
 
