@@ -249,7 +249,10 @@ fn extract_commands_two_args<'a>(line: &'a str, cmd: &str) -> Vec<&'a str> {
         let after = if after.starts_with('{') {
             match after.find('}') {
                 Some(end) => &after[end + 1..],
-                None => { search = after; continue; }
+                None => {
+                    search = after;
+                    continue;
+                }
             }
         } else {
             search = after;

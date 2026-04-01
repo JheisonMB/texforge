@@ -155,10 +155,7 @@ pub fn download(name: &str) -> Result<ResolvedTemplate> {
 
 /// List template names available in the remote registry.
 pub fn list_remote() -> Result<Vec<String>> {
-    let url = format!(
-        "https://api.github.com/repos/{}/contents",
-        REGISTRY_REPO
-    );
+    let url = format!("https://api.github.com/repos/{}/contents", REGISTRY_REPO);
 
     let response = reqwest::blocking::Client::new()
         .get(&url)
