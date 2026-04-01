@@ -81,6 +81,7 @@ pub fn lint(root: &Path, entry: &str, bib_file: Option<&str>) -> Result<Vec<Lint
         );
         check_environments(&rel, &content, &mut errors);
         check_mermaid_blocks(&rel, &content, &mut errors);
+        check_diagram_blocks(&rel, &content, "graphviz", &mut errors);
     }
 
     Ok(errors)
@@ -320,24 +321,30 @@ fn strip_comment(line: &str) -> String {
 
 /// Check mermaid blocks: unclosed and invalid pos option.
 fn check_mermaid_blocks(rel: &str, content: &str, errors: &mut Vec<LintError>) {
+    check_diagram_blocks(rel, content, "mermaid", errors);
+}
+
+/// Check diagram blocks (mermaid, graphviz): unclosed and invalid pos option.
+fn check_diagram_blocks(rel: &str, content: &str, env: &str, errors: &mut Vec<LintError>) {
     const VALID_POS: &[&str] = &["H", "t", "b", "h", "p"];
 
     for (i, line) in content.lines().enumerate() {
         let line_num = i + 1;
         let trimmed = line.trim();
 
-        if !trimmed.starts_with("\\begin{mermaid}") {
+        if !trimmed.starts_with(&format!("\\begin{{{}}}", env)) {
             continue;
         }
 
         // Check for unclosed block
+        let end_tag = format!("\\end{{{}}}", env);
         let rest = &content[content.lines().take(i).map(|l| l.len() + 1).sum::<usize>()..];
-        if !rest.contains("\\end{mermaid}") {
+        if !rest.contains(&*end_tag) {
             errors.push(LintError {
                 file: rel.to_string(),
                 line: line_num,
-                message: "\\begin{mermaid} without matching \\end{mermaid}".into(),
-                suggestion: Some("Add \\end{mermaid}".into()),
+                message: format!("\\begin{{{}}} without matching \\end{{{}}}", env, env),
+                suggestion: Some(format!("Add \\end{{{}}}", env)),
             });
             continue;
         }
@@ -355,8 +362,8 @@ fn check_mermaid_blocks(rel: &str, content: &str, errors: &mut Vec<LintError>) {
                                     file: rel.to_string(),
                                     line: line_num,
                                     message: format!(
-                                        "\\begin{{mermaid}} invalid pos='{}' — valid values: H, t, b, h, p",
-                                        pos
+                                        "\\begin{{{}}} invalid pos='{}' — valid values: H, t, b, h, p",
+                                        env, pos
                                     ),
                                     suggestion: Some("Use pos=H, pos=t, pos=b, pos=h, or pos=p".into()),
                                 });

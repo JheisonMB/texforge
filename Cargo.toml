@@ -42,6 +42,9 @@ zip = { version = "2", default-features = false, features = ["deflate"] }
 mermaid-rs-renderer = { version = "0.2", default-features = false }
 resvg = "0.46"
 
+# Graphviz/DOT diagram rendering
+layout-rs = "0.1"
+
 [dev-dependencies]
 tempfile = "3.8"
 
