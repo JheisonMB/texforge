@@ -1,4 +1,16 @@
-# texforge
+```
+ ███████████          █████ █████ ███████████                                     
+░█░░░███░░░█         ░░███ ░░███ ░░███░░░░░░█                                     
+░   ░███  ░   ██████  ░░███ ███   ░███   █ ░   ██████  ████████   ███████  ██████ 
+    ░███     ███░░███  ░░█████    ░███████    ███░░███░░███░░███ ███░░███ ███░░███
+    ░███    ░███████    ███░███   ░███░░░█   ░███ ░███ ░███ ░░░ ░███ ░███░███████ 
+    ░███    ░███░░░    ███ ░░███  ░███  ░    ░███ ░███ ░███     ░███ ░███░███░░░  
+    █████   ░░██████  █████ █████ █████      ░░██████  █████    ░░███████░░██████ 
+   ░░░░░     ░░░░░░  ░░░░░ ░░░░░ ░░░░░        ░░░░░░  ░░░░░      ░░░░░███ ░░░░░░  
+                                                                 ███ ░███         
+                                                                ░░██████          
+                                                                 ░░░░░░           
+```
 
 [![CI](https://github.com/JheisonMB/texforge/actions/workflows/ci.yml/badge.svg)](https://github.com/JheisonMB/texforge/actions/workflows/ci.yml)
 [![Release](https://github.com/JheisonMB/texforge/actions/workflows/release.yml/badge.svg)](https://github.com/JheisonMB/texforge/actions/workflows/release.yml)
@@ -83,20 +95,12 @@ npx skills add https://github.com/jheisonmb/skills --skill texforge
 ## Quick Start
 
 ```bash
-# Create a new project from a template
+# Interactive wizard — new project or migrate existing
+texforge init
+
+# Or directly:
 texforge new mi-tesis
-
-# Check for errors without compiling
-texforge check
-
-# Format your .tex files
-texforge fmt
-
-# Build to PDF
 texforge build
-
-# Remove build artifacts
-texforge clean
 ```
 
 ## Workflow
@@ -128,9 +132,26 @@ sequenceDiagram
     Tectonic-->>User: build/main.pdf
 ```
 
+## `texforge init`
+
+Interactive wizard. Auto-detects the context:
+
+- If a `.tex` file with `\documentclass` is found in the current directory — migrates the existing project (asks for title and author, generates `project.toml`)
+- Otherwise — guides creation of a new project (asks for name and template)
+
+```bash
+# Existing LaTeX project
+cd mi-tesis-existente/
+texforge init
+
+# Empty directory
+mkdir mi-nuevo-doc && cd mi-nuevo-doc
+texforge init
+```
+
 ---
 
-## Commands
+
 
 | Command | Description |
 |---|---|
