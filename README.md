@@ -136,7 +136,7 @@ sequenceDiagram
 |---|---|
 | `texforge new <name>` | Create new project from template |
 | `texforge new <name> -t <template>` | Create with specific template |
-| `texforge init` | Initialize texforge in an existing LaTeX project |
+| `texforge init` | Interactive wizard — new project or migrate existing |
 | `texforge build` | Compile to PDF |
 | `texforge build --watch` | Watch for changes and rebuild automatically |
 | `texforge clean` | Remove build artifacts |
@@ -204,11 +204,11 @@ Both rendered to PNG via pure Rust — no browser, no Node.js, no `dot` binary r
 `texforge build --watch` watches for `.tex` file changes and rebuilds automatically:
 
 ```bash
-texforge build --watch            # rebuild after 10s of inactivity (default)
+texforge build --watch            # rebuild after 2s of inactivity (default)
 texforge build --watch --delay 5  # custom delay in seconds
 ```
 
-The terminal stays open showing build output. Press `Ctrl+C` to stop.
+The terminal shows a live session timer, build count, and the result of the last build. Press `Ctrl+C` to stop.
 
 ---
 
@@ -271,10 +271,10 @@ texforge fmt --check   # check without modifying (CI-friendly)
 
 | Platform | Architecture | Status |
 |---|---|---|
-| Linux | x86_64 | ✅ |
-| macOS | x86_64 | ✅ |
-| macOS | ARM64 (Apple Silicon) | ✅ |
-| Windows | x86_64 | ✅ |
+| Linux | x86_64 | yes |
+| macOS | x86_64 | yes |
+| macOS | ARM64 (Apple Silicon) | yes |
+| Windows | x86_64 | yes |
 
 ---
 

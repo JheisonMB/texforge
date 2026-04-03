@@ -33,7 +33,7 @@ enum Commands {
         #[arg(long)]
         watch: bool,
         /// Debounce delay in seconds before rebuilding (default: 10)
-        #[arg(long, default_value = "10")]
+        #[arg(long, default_value = "2")]
         delay: u64,
     },
     /// Format .tex files
