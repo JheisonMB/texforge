@@ -55,7 +55,7 @@ bibliografia = "bib/references.bib"
     // Ensure assets/images directory exists
     std::fs::create_dir_all(project_dir.join("assets/images"))?;
 
-    println!("✅ Project '{}' created successfully", name);
+    println!("  ◇ Project '{}' created successfully", name);
     println!();
     println!("  cd {}", name);
     println!("  texforge build");

@@ -18,7 +18,7 @@ pub fn execute() -> Result<()> {
     )?;
 
     if errors.is_empty() {
-        println!("✅ No issues found");
+        println!("  ◇ No issues found");
     } else {
         println!();
         for e in &errors {

@@ -40,9 +40,9 @@ pub fn execute(check: bool) -> Result<()> {
             unformatted
         );
     } else if !check {
-        println!("✅ {} file(s) checked", files.len());
+        println!("  ◇ {} file(s) checked", files.len());
     } else {
-        println!("✅ All files formatted correctly");
+        println!("  ◇ All files formatted correctly");
     }
 
     Ok(())
