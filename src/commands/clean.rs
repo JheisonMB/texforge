@@ -15,6 +15,6 @@ pub fn execute() -> Result<()> {
     }
 
     std::fs::remove_dir_all(&build_dir)?;
-    println!("✅ build/ removed");
+    println!("  ◇ build/ removed");
     Ok(())
 }

@@ -1,4 +1,16 @@
-# texforge
+```
+ ███████████          █████ █████ ███████████                                     
+░█░░░███░░░█         ░░███ ░░███ ░░███░░░░░░█                                     
+░   ░███  ░   ██████  ░░███ ███   ░███   █ ░   ██████  ████████   ███████  ██████ 
+    ░███     ███░░███  ░░█████    ░███████    ███░░███░░███░░███ ███░░███ ███░░███
+    ░███    ░███████    ███░███   ░███░░░█   ░███ ░███ ░███ ░░░ ░███ ░███░███████ 
+    ░███    ░███░░░    ███ ░░███  ░███  ░    ░███ ░███ ░███     ░███ ░███░███░░░  
+    █████   ░░██████  █████ █████ █████      ░░██████  █████    ░░███████░░██████ 
+   ░░░░░     ░░░░░░  ░░░░░ ░░░░░ ░░░░░        ░░░░░░  ░░░░░      ░░░░░███ ░░░░░░  
+                                                                 ███ ░███         
+                                                                ░░██████          
+                                                                 ░░░░░░           
+```
 
 [![CI](https://github.com/JheisonMB/texforge/actions/workflows/ci.yml/badge.svg)](https://github.com/JheisonMB/texforge/actions/workflows/ci.yml)
 [![Release](https://github.com/JheisonMB/texforge/actions/workflows/release.yml/badge.svg)](https://github.com/JheisonMB/texforge/actions/workflows/release.yml)
@@ -83,20 +95,12 @@ npx skills add https://github.com/jheisonmb/skills --skill texforge
 ## Quick Start
 
 ```bash
-# Create a new project from a template
+# Interactive wizard — new project or migrate existing
+texforge init
+
+# Or directly:
 texforge new mi-tesis
-
-# Check for errors without compiling
-texforge check
-
-# Format your .tex files
-texforge fmt
-
-# Build to PDF
 texforge build
-
-# Remove build artifacts
-texforge clean
 ```
 
 ## Workflow
@@ -128,15 +132,32 @@ sequenceDiagram
     Tectonic-->>User: build/main.pdf
 ```
 
+## `texforge init`
+
+Interactive wizard. Auto-detects the context:
+
+- If a `.tex` file with `\documentclass` is found in the current directory — migrates the existing project (asks for title and author, generates `project.toml`)
+- Otherwise — guides creation of a new project (asks for name and template)
+
+```bash
+# Existing LaTeX project
+cd mi-tesis-existente/
+texforge init
+
+# Empty directory
+mkdir mi-nuevo-doc && cd mi-nuevo-doc
+texforge init
+```
+
 ---
 
-## Commands
+
 
 | Command | Description |
 |---|---|
 | `texforge new <name>` | Create new project from template |
 | `texforge new <name> -t <template>` | Create with specific template |
-| `texforge init` | Initialize texforge in an existing LaTeX project |
+| `texforge init` | Interactive wizard — new project or migrate existing |
 | `texforge build` | Compile to PDF |
 | `texforge build --watch` | Watch for changes and rebuild automatically |
 | `texforge clean` | Remove build artifacts |
@@ -204,11 +225,11 @@ Both rendered to PNG via pure Rust — no browser, no Node.js, no `dot` binary r
 `texforge build --watch` watches for `.tex` file changes and rebuilds automatically:
 
 ```bash
-texforge build --watch            # rebuild after 10s of inactivity (default)
+texforge build --watch            # rebuild after 2s of inactivity (default)
 texforge build --watch --delay 5  # custom delay in seconds
 ```
 
-The terminal stays open showing build output. Press `Ctrl+C` to stop.
+The terminal shows a live session timer, build count, and the result of the last build. Press `Ctrl+C` to stop.
 
 ---
 
@@ -271,10 +292,10 @@ texforge fmt --check   # check without modifying (CI-friendly)
 
 | Platform | Architecture | Status |
 |---|---|---|
-| Linux | x86_64 | ✅ |
-| macOS | x86_64 | ✅ |
-| macOS | ARM64 (Apple Silicon) | ✅ |
-| Windows | x86_64 | ✅ |
+| Linux | x86_64 | yes |
+| macOS | x86_64 | yes |
+| macOS | ARM64 (Apple Silicon) | yes |
+| Windows | x86_64 | yes |
 
 ---
 

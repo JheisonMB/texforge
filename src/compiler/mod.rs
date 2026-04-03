@@ -197,7 +197,7 @@ fn install_tectonic(dest: &std::path::Path) -> Result<()> {
         std::fs::set_permissions(dest, std::fs::Permissions::from_mode(0o755))?;
     }
 
-    eprintln!("✅ Tectonic installed to {}", dest.display());
+    eprintln!("  ◇ Tectonic installed to {}", dest.display());
     Ok(())
 }
 

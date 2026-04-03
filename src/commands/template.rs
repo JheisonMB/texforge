@@ -48,14 +48,14 @@ pub fn list(all: bool) -> Result<()> {
 pub fn add(name: &str) -> Result<()> {
     println!("Downloading template '{}'...", name);
     templates::download(name)?;
-    println!("✅ Template '{}' installed", name);
+    println!("  ◇ Template '{}' installed", name);
     Ok(())
 }
 
 /// Remove a template from local cache.
 pub fn remove(name: &str) -> Result<()> {
     let path = templates::remove_cached(name)?;
-    println!("✅ Removed template '{}' ({})", name, path.display());
+    println!("  ◇ Removed template '{}' ({})", name, path.display());
     Ok(())
 }
 
@@ -63,7 +63,7 @@ pub fn remove(name: &str) -> Result<()> {
 pub fn validate(name: &str) -> Result<()> {
     let resolved = templates::resolve(name)?;
     if resolved.files.contains_key("template.toml") {
-        println!("✅ Template '{}' is valid", name);
+        println!("  ◇ Template '{}' is valid", name);
     } else {
         anyhow::bail!("Template '{}' is missing template.toml", name);
     }
