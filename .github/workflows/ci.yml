@@ -51,7 +51,7 @@ jobs:
         run: cargo test
 
       - name: Cargo clippy
-        run: cargo clippy --all-targets -- -D warnings
+        run: cargo clippy --all-targets --allow-dirty -- -D warnings
 
   publish-check:
     name: Publish Check (dry-run)
