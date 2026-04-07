@@ -1,10 +1,9 @@
 #!/bin/sh
 # install.sh — download and install texforge from GitHub Releases
-# tectonic (LaTeX engine) is installed automatically on first build
-# Usage: curl -fsSL https://raw.githubusercontent.com/JheisonMB/texforge/main/install.sh | sh
+# Usage: curl -fsSL https://raw.githubusercontent.com/UniverLab/texforge/main/scripts/install.sh | sh
 set -eu
 
-REPO="JheisonMB/texforge"
+REPO="UniverLab/texforge"
 BINARY="texforge"
 INSTALL_DIR="${INSTALL_DIR:-$HOME/.local/bin}"
 
@@ -37,18 +36,23 @@ trap 'rm -rf "$TMPDIR"' EXIT
 # 1. Install texforge
 # ============================================================
 
-# --- resolve latest version ---
+# --- resolve version ---
 if [ -n "${VERSION:-}" ]; then
   TAG="v$VERSION"
   info "version" "$TAG (pinned)"
 else
-  TAG=$(curl -fsSL -o /dev/null -w '%{url_effective}' "https://github.com/$REPO/releases/latest" | rev | cut -d'/' -f1 | rev)
-  [ -z "$TAG" ] && error "Could not resolve latest release tag"
-  info "version" "$TAG (latest)"
+  # Get latest stable release (exclude prerelease)
+  TAG=$(curl -fsSL "https://api.github.com/repos/$REPO/releases" | grep -i '"tag_name"' | grep -v 'prerelease.*true' | head -1 | cut -d'"' -f4)
+  if [ -z "$TAG" ]; then
+    # Fallback to latest if no stable found
+    TAG=$(curl -fsSL -o /dev/null -w '%{url_effective}' "https://github.com/$REPO/releases/latest" | rev | cut -d'/' -f1 | rev)
+  fi
+  [ -z "$TAG" ] && error "Could not resolve latest stable release"
+  info "version" "$TAG (latest stable)"
 fi
 
 # --- download ---
-ARCHIVE="${BINARY}-${TAG}-${TARGET}.tar.gz"
+ARCHIVE="$BINARY-${TAG}-${TARGET}.tar.gz"
 URL="https://github.com/$REPO/releases/download/${TAG}/${ARCHIVE}"
 
 info "download" "$URL"
@@ -98,5 +102,4 @@ fi
 
 info "done" "$($INSTALL_DIR/$BINARY --version 2>/dev/null || echo "$BINARY installed")"
 echo ""
-info "ready" "Run 'texforge new my-project' to get started!"
-info "note"  "tectonic (LaTeX engine) will be installed automatically on first build"
+info "ready" "Run '$BINARY --help' to get started!"

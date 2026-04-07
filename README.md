@@ -12,8 +12,8 @@
                                                                  ░░░░░░           
 ```
 
-[![CI](https://github.com/JheisonMB/texforge/actions/workflows/ci.yml/badge.svg)](https://github.com/JheisonMB/texforge/actions/workflows/ci.yml)
-[![Release](https://github.com/JheisonMB/texforge/actions/workflows/release.yml/badge.svg)](https://github.com/JheisonMB/texforge/actions/workflows/release.yml)
+[![CI](https://github.com/UniverLab/texforge/actions/workflows/ci.yml/badge.svg)](https://github.com/UniverLab/texforge/actions/workflows/ci.yml)
+[![Release](https://github.com/UniverLab/texforge/actions/workflows/release.yml/badge.svg)](https://github.com/UniverLab/texforge/actions/workflows/release.yml)
 [![Crates.io](https://img.shields.io/crates/v/texforge)](https://crates.io/crates/texforge)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 
@@ -28,13 +28,13 @@ Self-contained LaTeX to PDF compiler — one curl, zero friction. No TeX Live, n
 **Linux / macOS:**
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/JheisonMB/texforge/main/install.sh | sh
+curl -fsSL https://raw.githubusercontent.com/UniverLab/texforge/main/scripts/install.sh | sh
 ```
 
 **Windows (PowerShell):**
 
 ```powershell
-irm https://raw.githubusercontent.com/JheisonMB/texforge/main/install.ps1 | iex
+irm https://raw.githubusercontent.com/UniverLab/texforge/main/scripts/install.ps1 | iex
 ```
 
 This downloads and installs `texforge`. No Rust toolchain required. Tectonic (the LaTeX engine) is installed automatically on first build.
@@ -43,15 +43,15 @@ You can customize the install:
 
 ```bash
 # Pin a specific version
-VERSION=0.1.0 curl -fsSL https://raw.githubusercontent.com/JheisonMB/texforge/main/install.sh | sh
+VERSION=0.1.0 curl -fsSL https://raw.githubusercontent.com/UniverLab/texforge/main/scripts/install.sh | sh
 
 # Install to a custom directory
-INSTALL_DIR=/usr/local/bin curl -fsSL https://raw.githubusercontent.com/JheisonMB/texforge/main/install.sh | sh
+INSTALL_DIR=/usr/local/bin curl -fsSL https://raw.githubusercontent.com/UniverLab/texforge/main/scripts/install.sh | sh
 ```
 
 ```powershell
 # Pin a specific version (PowerShell)
-$env:VERSION="0.1.0"; irm https://raw.githubusercontent.com/JheisonMB/texforge/main/install.ps1 | iex
+$env:VERSION="0.1.0"; irm https://raw.githubusercontent.com/UniverLab/texforge/main/scripts/install.ps1 | iex
 ```
 
 ### Via cargo
@@ -67,7 +67,7 @@ Available on [crates.io](https://crates.io/crates/texforge).
 ### From source
 
 ```bash
-git clone https://github.com/JheisonMB/texforge.git
+git clone https://github.com/UniverLab/texforge.git
 cd texforge
 cargo build --release
 # Binary at target/release/texforge
@@ -75,7 +75,7 @@ cargo build --release
 
 ### GitHub Releases
 
-Check the [Releases](https://github.com/JheisonMB/texforge/releases) page for precompiled binaries (Linux x86_64, macOS x86_64/ARM64, Windows x86_64).
+Check the [Releases](https://github.com/UniverLab/texforge/releases) page for precompiled binaries (Linux x86_64, macOS x86_64/ARM64, Windows x86_64).
 
 ### Uninstall
 
@@ -174,7 +174,7 @@ texforge init
 
 ## Templates
 
-Templates are managed through the [texforge-templates](https://github.com/JheisonMB/texforge-templates) registry. The `general` template is embedded in the binary and works offline. Run `texforge template list --all` to see all available templates.
+Templates are managed through the [texforge-templates](https://github.com/UniverLab/texforge-templates) registry. The `general` template is embedded in the binary and works offline. Run `texforge template list --all` to see all available templates.
 
 ---
 
