@@ -2,6 +2,8 @@
 //!
 //! Queries the GitHub API to detect new stable versions and compare with local version.
 
+#![allow(dead_code)]
+
 use crate::version::SemVer;
 use anyhow::{anyhow, Context, Result};
 use serde::Deserialize;

@@ -1,11 +1,13 @@
 //! Placeholder resolution engine with 5-level precedence chain.
 //!
-//! Resolves {{placeholder}} tokens in template files according to:
+//! Resolves `{{placeholder}}` tokens in template files according to:
 //! 1. CLI arguments
-//! 2. Project config (./.texforge/config.toml)
-//! 3. User config (~/.texforge/config.toml)
-//! 4. Template defaults (from template.toml)
+//! 2. Project config (`./.texforge/config.toml`)
+//! 3. User config (`~/.texforge/config.toml`)
+//! 4. Template defaults (from `template.toml`)
 //! 5. Interactive prompt (if required and no value found)
+
+#![allow(dead_code)]
 
 use crate::config;
 use crate::manifest::Placeholder;
@@ -67,10 +69,7 @@ impl PlaceholderResolver {
     }
 
     /// Resolve all placeholders in a set, filling required ones or erroring
-    pub fn resolve_all(
-        &self,
-        placeholders: &[Placeholder],
-    ) -> Result<HashMap<String, String>> {
+    pub fn resolve_all(&self, placeholders: &[Placeholder]) -> Result<HashMap<String, String>> {
         let mut result = HashMap::new();
 
         for ph in placeholders {

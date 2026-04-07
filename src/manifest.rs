@@ -3,6 +3,8 @@
 //! Parses `template.toml` files that describe LaTeX templates with metadata,
 //! placeholders, and post-generation scripts.
 
+#![allow(dead_code)]
+
 use anyhow::{anyhow, Context, Result};
 use serde::{Deserialize, Serialize};
 use std::path::Path;
@@ -99,7 +101,9 @@ impl TemplateManifest {
         let mut placeholder_names = std::collections::HashSet::new();
         for ph in &manifest.placeholders {
             if ph.name.is_empty() {
-                return Err(anyhow!("Template manifest: placeholder name cannot be empty"));
+                return Err(anyhow!(
+                    "Template manifest: placeholder name cannot be empty"
+                ));
             }
             if !placeholder_names.insert(&ph.name) {
                 return Err(anyhow!(
@@ -215,9 +219,6 @@ description = "Duplicate"
 "#;
         let result = TemplateManifest::from_str(toml);
         assert!(result.is_err());
-        assert!(result
-            .unwrap_err()
-            .to_string()
-            .contains("duplicate"));
+        assert!(result.unwrap_err().to_string().contains("duplicate"));
     }
 }

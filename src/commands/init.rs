@@ -3,7 +3,7 @@
 use std::path::Path;
 
 use anyhow::Result;
-use inquire::{Select, Text, Confirm};
+use inquire::{Confirm, Select, Text};
 
 use crate::commands::new as new_cmd;
 use crate::templates;

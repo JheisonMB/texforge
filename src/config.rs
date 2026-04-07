@@ -1,6 +1,6 @@
 //! Global user configuration system.
 //!
-//! Stores user preferences in ~/.texforge/config.toml or $XDG_CONFIG_HOME/texforge/config.toml.
+//! Stores user preferences in `~/.texforge/config.toml` or `$XDG_CONFIG_HOME/texforge/config.toml`.
 //! Supports TOML format with user, institution, defaults, and templates sections.
 
 use anyhow::{anyhow, Context, Result};
@@ -50,7 +50,8 @@ pub struct TemplatesConfig {
 }
 
 /// Returns the path to the user's texforge config directory.
-/// Prefers $XDG_CONFIG_HOME/texforge, falls back to ~/.texforge/config.toml.
+/// Prefers `$XDG_CONFIG_HOME/texforge`, falls back to `~/.texforge/config.toml`.
+#[allow(dead_code)]
 fn config_dir() -> Result<PathBuf> {
     if let Ok(xdg_config) = std::env::var("XDG_CONFIG_HOME") {
         let path = PathBuf::from(xdg_config).join("texforge");
@@ -72,7 +73,7 @@ pub fn config_file_path() -> Result<PathBuf> {
     Ok(home.join(".texforge/config.toml"))
 }
 
-/// Load config from ~/.texforge/config.toml or XDG_CONFIG_HOME/texforge/config.toml
+/// Load config from `~/.texforge/config.toml` or `XDG_CONFIG_HOME/texforge/config.toml`
 pub fn load() -> Result<Config> {
     let path = config_file_path()?;
 
@@ -87,10 +88,12 @@ pub fn load() -> Result<Config> {
     toml::from_str(&content).context("Failed to parse config TOML")
 }
 
-/// Save config to ~/.texforge/config.toml or XDG_CONFIG_HOME/texforge/config.toml
+/// Save config to `~/.texforge/config.toml` or `XDG_CONFIG_HOME/texforge/config.toml`
 pub fn save(config: &Config) -> Result<()> {
     let path = config_file_path()?;
-    let dir = path.parent().ok_or_else(|| anyhow!("Invalid config path"))?;
+    let dir = path
+        .parent()
+        .ok_or_else(|| anyhow!("Invalid config path"))?;
 
     // Create directory if it doesn't exist
     fs::create_dir_all(dir).context("Failed to create config directory")?;

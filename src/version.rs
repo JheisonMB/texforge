@@ -2,7 +2,7 @@
 
 use std::cmp::Ordering;
 
-/// A semantic version parsed as (major, minor, patch, prerelease_suffix)
+/// A semantic version parsed as `(major, minor, patch, prerelease_suffix)`
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct SemVer {
     pub major: u32,
@@ -12,11 +12,11 @@ pub struct SemVer {
 }
 
 impl SemVer {
-    /// Parse a version string like "1.2.3" or "1.2.3-alpha" into a SemVer.
+    /// Parse a version string like "1.2.3" or "1.2.3-alpha" into a `SemVer`.
     /// Handles common prefixes like "v1.2.3".
     pub fn parse(s: &str) -> Option<Self> {
         let s = s.trim_start_matches('v');
-        
+
         // Split on '-' to separate prerelease
         let (version_part, prerelease) = if let Some(idx) = s.find('-') {
             let (v, p) = s.split_at(idx);
@@ -44,11 +44,12 @@ impl SemVer {
     }
 
     /// Check if this version is stable (no prerelease suffix).
+    #[allow(dead_code)]
     pub fn is_stable(&self) -> bool {
         self.prerelease.is_none()
     }
 
-    /// Compare two versions. Returns Ordering::Greater if self > other.
+    /// Compare two versions. Returns `Ordering::Greater` if self > other.
     /// Stable versions are considered greater than prerelease versions with same base.
     pub fn compare(&self, other: &SemVer) -> Ordering {
         // First compare base version (major.minor.patch)
@@ -68,17 +69,17 @@ impl SemVer {
         // Base version is equal. Compare prerelease.
         // Stable > prerelease for same base version
         match (&self.prerelease, &other.prerelease) {
-            (None, None) => Ordering::Equal,           // both stable
-            (None, Some(_)) => Ordering::Greater,      // self stable, other prerelease
-            (Some(_), None) => Ordering::Less,         // self prerelease, other stable
-            (Some(a), Some(b)) => a.cmp(b),            // both prerelease, compare strings
+            (None, None) => Ordering::Equal,      // both stable
+            (None, Some(_)) => Ordering::Greater, // self stable, other prerelease
+            (Some(_), None) => Ordering::Less,    // self prerelease, other stable
+            (Some(a), Some(b)) => a.cmp(b),       // both prerelease, compare strings
         }
     }
 }
 
 impl PartialOrd for SemVer {
     fn partial_cmp(&self, other: &SemVer) -> Option<Ordering> {
-        Some(self.compare(other))
+        Some(std::cmp::Ord::cmp(self, other))
     }
 }
 
