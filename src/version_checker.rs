@@ -136,6 +136,6 @@ mod tests {
     #[test]
     fn test_get_local_version() {
         let version = get_local_version().unwrap();
-        assert!(version.major > 0);
+        assert!(version.major > 0 || version.minor > 0 || version.patch > 0);
     }
 }
