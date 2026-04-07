@@ -49,6 +49,11 @@ enum Commands {
         #[command(subcommand)]
         action: TemplateAction,
     },
+    /// Manage global configuration
+    Config {
+        #[command(subcommand)]
+        action: ConfigAction,
+    },
 }
 
 #[derive(Subcommand)]
@@ -65,6 +70,16 @@ enum TemplateAction {
     Remove { name: String },
     /// Validate template compatibility
     Validate { name: String },
+}
+
+#[derive(Subcommand)]
+enum ConfigAction {
+    /// Get a config value
+    Get { key: String },
+    /// Set a config value
+    Set { key: String, value: String },
+    /// List all config values
+    List,
 }
 
 impl Cli {
@@ -87,6 +102,11 @@ impl Cli {
                 TemplateAction::Add { source } => commands::template::add(&source),
                 TemplateAction::Remove { name } => commands::template::remove(&name),
                 TemplateAction::Validate { name } => commands::template::validate(&name),
+            },
+            Commands::Config { action } => match action {
+                ConfigAction::Get { key } => commands::config::get(&key),
+                ConfigAction::Set { key, value } => commands::config::set(&key, &value),
+                ConfigAction::List => commands::config::list(),
             },
         }
     }
