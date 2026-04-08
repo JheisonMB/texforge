@@ -40,7 +40,7 @@ const BANNER: &str = r#"
 /// Get a config value by key (e.g., "name", "email", "institution", "language")
 pub fn get(key: &str) -> Result<()> {
     let config = config::load()?;
-    
+
     match key {
         "name" => {
             if let Some(name) = &config.user.name {
@@ -71,17 +71,20 @@ pub fn get(key: &str) -> Result<()> {
             }
         }
         _ => {
-            anyhow::bail!("Unknown config key: {}. Available: name, email, institution, language", key);
+            anyhow::bail!(
+                "Unknown config key: {}. Available: name, email, institution, language",
+                key
+            );
         }
     }
-    
+
     Ok(())
 }
 
 /// Set a config value by key
 pub fn set(key: &str, value: &str) -> Result<()> {
     let mut config = config::load()?;
-    
+
     match key {
         "name" => {
             config.user.name = Some(value.to_string());
@@ -96,10 +99,13 @@ pub fn set(key: &str, value: &str) -> Result<()> {
             config.defaults.language = Some(value.to_string());
         }
         _ => {
-            anyhow::bail!("Unknown config key: {}. Available: name, email, institution, language", key);
+            anyhow::bail!(
+                "Unknown config key: {}. Available: name, email, institution, language",
+                key
+            );
         }
     }
-    
+
     config::save(&config)?;
     println!("✓ Set {} = {}", key, value);
     Ok(())
@@ -108,9 +114,9 @@ pub fn set(key: &str, value: &str) -> Result<()> {
 /// List all configuration values
 pub fn list() -> Result<()> {
     let config = config::load()?;
-    
+
     println!("Global configuration:\n");
-    
+
     println!("[User]");
     if let Some(name) = &config.user.name {
         println!("  name       = {}", name);
@@ -122,7 +128,7 @@ pub fn list() -> Result<()> {
     } else {
         println!("  email      = (not set)");
     }
-    
+
     println!();
     println!("[Institution]");
     if let Some(inst) = &config.institution.name {
@@ -130,7 +136,7 @@ pub fn list() -> Result<()> {
     } else {
         println!("  name       = (not set)");
     }
-    
+
     println!();
     println!("[Defaults]");
     if let Some(lang) = &config.defaults.language {
@@ -138,7 +144,7 @@ pub fn list() -> Result<()> {
     } else {
         println!("  language   = (not set)");
     }
-    
+
     Ok(())
 }
 
@@ -147,24 +153,24 @@ pub fn wizard() -> Result<()> {
     println!("{BANNER}");
     println!("Configuration Wizard\n");
     println!("Fill in your details to be used as placeholders in templates:\n");
-    
+
     let config = config::load()?;
-    
+
     let name = Text::new("Name")
         .with_default(config.user.name.as_deref().unwrap_or(""))
         .prompt()?;
-    
+
     let email = Text::new("Email")
         .with_default(config.user.email.as_deref().unwrap_or("email@domain.com"))
         .prompt()?;
-    
+
     let institution = Text::new("Institution")
         .with_default(config.institution.name.as_deref().unwrap_or(""))
         .prompt()?;
-    
+
     let default_lang = config.defaults.language.as_deref().unwrap_or("english");
     let language_options: Vec<&str> = AVAILABLE_LANGUAGES.to_vec();
-    
+
     let selected_language = if AVAILABLE_LANGUAGES.contains(&default_lang) {
         Select::new("Language", language_options)
             .with_help_message("↑↓ move  enter confirm")
@@ -175,18 +181,18 @@ pub fn wizard() -> Result<()> {
             .with_help_message("↑↓ move  enter confirm")
             .prompt()
     };
-    
+
     let language = selected_language?;
-    
+
     // Save all values
     let mut new_config = config::load()?;
     new_config.user.name = Some(name);
     new_config.user.email = Some(email);
     new_config.institution.name = Some(institution);
     new_config.defaults.language = Some(language.to_string());
-    
+
     config::save(&new_config)?;
-    
+
     println!("\n✓ Configuration saved!");
     Ok(())
 }

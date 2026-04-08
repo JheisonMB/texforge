@@ -105,7 +105,6 @@ pub fn save(config: &Config) -> Result<()> {
     Ok(())
 }
 
-
 #[cfg(test)]
 mod tests {
     use super::*;
