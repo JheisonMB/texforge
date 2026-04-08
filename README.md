@@ -21,16 +21,9 @@ Self-contained LaTeX to PDF compiler — one curl, zero friction. No TeX Live, n
 
 ---
 
-### Demos
-
-#### Uso básico del CLI
+### Demo CLI
 
 ![Demo CLI](assets/texforge.gif)
-
-#### Integración con agentes en OpenCode
-
-![Demo OpenCode](assets/opencode.gif)
-
 
 ---
 
@@ -104,6 +97,10 @@ An [texforge Skill](https://skills.sh/jheisonmb/skills/texforge) is available fo
 ```bash
 npx skills add https://github.com/jheisonmb/skills --skill texforge
 ```
+
+### Demo Agent with opencode
+
+![Demo OpenCode](assets/opencode.gif)
 
 ## Quick Start
 

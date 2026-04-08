@@ -47,7 +47,6 @@ notify = { version = "7", features = ["macos_fsevent"] }
 # Mermaid diagram rendering
 mermaid-rs-renderer = { version = "0.2", default-features = false }
 resvg = "0.46"
-fontdb = "0.20"
 
 # Graphviz/DOT diagram rendering
 layout-rs = "0.1"
