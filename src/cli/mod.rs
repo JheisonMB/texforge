@@ -49,10 +49,10 @@ enum Commands {
         #[command(subcommand)]
         action: TemplateAction,
     },
-    /// Manage global configuration
+    /// Manage global configuration (or start interactive wizard if no subcommand)
     Config {
         #[command(subcommand)]
-        action: ConfigAction,
+        action: Option<ConfigAction>,
     },
 }
 
@@ -104,9 +104,10 @@ impl Cli {
                 TemplateAction::Validate { name } => commands::template::validate(&name),
             },
             Commands::Config { action } => match action {
-                ConfigAction::Get { key } => commands::config::get(&key),
-                ConfigAction::Set { key, value } => commands::config::set(&key, &value),
-                ConfigAction::List => commands::config::list(),
+                Some(ConfigAction::Get { key }) => commands::config::get(&key),
+                Some(ConfigAction::Set { key, value }) => commands::config::set(&key, &value),
+                Some(ConfigAction::List) => commands::config::list(),
+                None => commands::config::wizard(),
             },
         }
     }
