@@ -8,6 +8,7 @@ on:
       - closed
     paths:
       - Cargo.toml
+  workflow_dispatch:
 
 permissions:
   contents: write
