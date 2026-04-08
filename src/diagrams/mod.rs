@@ -212,9 +212,71 @@ fn resolve_tex(root: &Path, input: &str) -> PathBuf {
     }
 }
 
+/// Build a font database with system fonts and platform-specific fallbacks.
+fn build_fontdb() -> resvg::usvg::fontdb::Database {
+    use resvg::usvg::fontdb::Database;
+
+    let mut db = Database::new();
+    db.load_system_fonts();
+
+    // On WSL / Windows, also load the Windows font directory
+    let win_fonts = std::path::Path::new("/mnt/c/Windows/Fonts");
+    if win_fonts.is_dir() {
+        db.load_fonts_dir(win_fonts);
+    }
+
+    // If the DB still has no fonts at all, try common directories explicitly.
+    if db.is_empty() {
+        for dir in ["/usr/share/fonts", "/usr/local/share/fonts"] {
+            let p = std::path::Path::new(dir);
+            if p.is_dir() {
+                db.load_fonts_dir(p);
+            }
+        }
+    }
+
+    // Collect the set of available family names once (avoids borrow conflicts).
+    let available: std::collections::HashSet<String> = db
+        .faces()
+        .flat_map(|f| f.families.iter().map(|(name, _)| name.clone()))
+        .collect();
+
+    // Map generic CSS families to the first concrete font we find in the DB.
+    let sans = ["Arial", "DejaVu Sans", "Liberation Sans", "Noto Sans"];
+    if let Some(f) = sans.iter().find(|n| available.contains(**n)) {
+        db.set_sans_serif_family(*f);
+    }
+    let serif = [
+        "Times New Roman",
+        "DejaVu Serif",
+        "Liberation Serif",
+        "Noto Serif",
+    ];
+    if let Some(f) = serif.iter().find(|n| available.contains(**n)) {
+        db.set_serif_family(*f);
+    }
+    let mono = [
+        "Courier New",
+        "DejaVu Sans Mono",
+        "Liberation Mono",
+        "Noto Sans Mono",
+    ];
+    if let Some(f) = mono.iter().find(|n| available.contains(**n)) {
+        db.set_monospace_family(*f);
+    }
+
+    db
+}
+
 /// Convert SVG string to PNG bytes at 2x scale for print quality.
 fn svg_to_png(svg: &str) -> Result<Vec<u8>> {
-    let options = resvg::usvg::Options::default();
+    let fontdb = build_fontdb();
+
+    let options = resvg::usvg::Options {
+        fontdb: std::sync::Arc::new(fontdb),
+        ..Default::default()
+    };
+
     let tree = resvg::usvg::Tree::from_str(svg, &options).context("Failed to parse SVG")?;
 
     let scale = 2.0_f32;

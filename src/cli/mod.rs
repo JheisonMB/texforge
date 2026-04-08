@@ -49,6 +49,13 @@ enum Commands {
         #[command(subcommand)]
         action: TemplateAction,
     },
+    /// Manage global configuration
+    Config {
+        /// Key to get/set (name, email, institution, language)
+        key: Option<String>,
+        /// Value to set (optional - if omitted, shows current value)
+        value: Option<String>,
+    },
 }
 
 #[derive(Subcommand)]
@@ -87,6 +94,13 @@ impl Cli {
                 TemplateAction::Add { source } => commands::template::add(&source),
                 TemplateAction::Remove { name } => commands::template::remove(&name),
                 TemplateAction::Validate { name } => commands::template::validate(&name),
+            },
+            Commands::Config { key, value } => match (key, value) {
+                (None, None) => commands::config::wizard(),
+                (Some(k), None) if k == "list" => commands::config::list(),
+                (Some(k), None) => commands::config::get(&k),
+                (Some(k), Some(v)) => commands::config::set(&k, &v),
+                (None, Some(_)) => anyhow::bail!("Cannot set value without a key"),
             },
         }
     }

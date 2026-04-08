@@ -3,10 +3,11 @@
 use std::path::Path;
 
 use anyhow::Result;
-use inquire::{Select, Text};
+use inquire::{Confirm, Select, Text};
 
 use crate::commands::new as new_cmd;
 use crate::templates;
+use crate::version_checker;
 
 pub(crate) const BANNER: &str = r#"
  ███████████          █████ █████ ███████████                                     
@@ -25,6 +26,9 @@ pub(crate) const BANNER: &str = r#"
 /// Interactive wizard: migrate existing project or scaffold a new one.
 pub fn execute() -> Result<()> {
     println!("{BANNER}");
+
+    // Check for version updates
+    check_for_updates()?;
 
     let root = std::env::current_dir()?;
 
@@ -154,4 +158,58 @@ fn find_file_by(
                 .ok()
                 .map(|p| p.to_string_lossy().to_string())
         })
+}
+
+/// Check if a newer stable version is available and prompt user
+fn check_for_updates() -> Result<()> {
+    // Query GitHub API for latest stable release
+    match version_checker::check_for_updates("UniverLab", "texforge") {
+        Ok(result) => {
+            if result.update_available {
+                if let Some(latest) = &result.latest_stable {
+                    println!(
+                        "\n  ℹ A new version of texforge is available: {} → {}",
+                        result.local_version, latest
+                    );
+
+                    let choice = Confirm::new("  Update now?")
+                        .with_default(false)
+                        .prompt()
+                        .unwrap_or(false);
+
+                    if choice {
+                        println!("\n  ⬇ Downloading texforge {}...", latest);
+                        match download_and_install(latest) {
+                            Ok(_) => {
+                                println!("  ✓ Update complete! Please restart texforge.\n");
+                                std::process::exit(0);
+                            }
+                            Err(e) => {
+                                eprintln!("  ✗ Update failed: {}", e);
+                                println!("  Manual update: https://github.com/UniverLab/texforge/releases\n");
+                            }
+                        }
+                    } else {
+                        println!("  (Update skipped)\n");
+                    }
+                }
+            }
+        }
+        Err(e) => {
+            // Silently fail if we can't check for updates (offline, API error, etc)
+            // Don't interrupt the user's workflow
+            eprintln!("  (Could not check for updates: {})", e);
+        }
+    }
+
+    Ok(())
+}
+
+/// Download and install a new binary (placeholder for Phase 1)
+fn download_and_install(version: &crate::version::SemVer) -> Result<()> {
+    // Phase 1: Show the download URL and instructions
+    // Phase 2+: Implement automatic download/install
+    let url = version_checker::get_release_download_url("UniverLab", "texforge", version);
+    println!("  Download: {}", url);
+    anyhow::bail!("Automatic installation not yet implemented. Please download from the URL above.")
 }
