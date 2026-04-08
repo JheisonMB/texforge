@@ -155,7 +155,7 @@ pub fn wizard() -> Result<()> {
         .prompt()?;
     
     let email = Text::new("Email")
-        .with_default(config.user.email.as_deref().unwrap_or(""))
+        .with_default(config.user.email.as_deref().unwrap_or("email@domain.com"))
         .prompt()?;
     
     let institution = Text::new("Institution")
