@@ -8,7 +8,20 @@
 
 use crate::config;
 use anyhow::Result;
-use inquire::Text;
+use inquire::{Select, Text};
+
+const AVAILABLE_LANGUAGES: &[&str] = &[
+    "english",
+    "spanish",
+    "french",
+    "german",
+    "portuguese",
+    "italian",
+    "dutch",
+    "russian",
+    "chinese",
+    "japanese",
+];
 
 const BANNER: &str = r#"
  ███████████          █████ █████ ███████████                                     
@@ -149,16 +162,28 @@ pub fn wizard() -> Result<()> {
         .with_default(config.institution.name.as_deref().unwrap_or(""))
         .prompt()?;
     
-    let language = Text::new("Language (e.g. english, spanish)")
-        .with_default(config.defaults.language.as_deref().unwrap_or("english"))
-        .prompt()?;
+    let default_lang = config.defaults.language.as_deref().unwrap_or("english");
+    let language_options: Vec<&str> = AVAILABLE_LANGUAGES.to_vec();
+    
+    let selected_language = if AVAILABLE_LANGUAGES.contains(&default_lang) {
+        Select::new("Language", language_options)
+            .with_help_message("↑↓ move  enter confirm")
+            .prompt_skippable()
+            .map(|opt| opt.unwrap_or(default_lang))
+    } else {
+        Select::new("Language", language_options)
+            .with_help_message("↑↓ move  enter confirm")
+            .prompt()
+    };
+    
+    let language = selected_language?;
     
     // Save all values
     let mut new_config = config::load()?;
     new_config.user.name = Some(name);
     new_config.user.email = Some(email);
     new_config.institution.name = Some(institution);
-    new_config.defaults.language = Some(language);
+    new_config.defaults.language = Some(language.to_string());
     
     config::save(&new_config)?;
     
