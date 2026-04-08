@@ -164,11 +164,49 @@ texforge init
 | `texforge fmt` | Format .tex files |
 | `texforge fmt --check` | Check formatting without modifying |
 | `texforge check` | Lint without compiling |
+| `texforge config` | Interactive wizard to set user details (name, email, institution, language) |
+| `texforge config list` | Show all configured values |
+| `texforge config <key>` | Show value for key (name, email, institution, language) |
+| `texforge config <key> <value>` | Set value for key |
 | `texforge template list` | List installed templates |
 | `texforge template list --all` | List installed + available in registry |
 | `texforge template add <name>` | Download template from registry |
 | `texforge template remove <name>` | Remove installed template |
 | `texforge template validate <name>` | Verify template compatibility |
+
+---
+
+## Configuration
+
+Global user details stored in `~/.texforge/config.toml`. These are used as replaceable placeholders in templates.
+
+**Interactive setup:**
+
+```bash
+texforge config
+```
+
+This launches a wizard asking for:
+- **Name**: Your full name
+- **Email**: Your email address  
+- **Institution**: Your institution/organization
+- **Language**: Document language (default: `english`)
+
+**Command-line interface:**
+
+```bash
+# View all settings
+texforge config list
+
+# Get a specific value
+texforge config name
+
+# Set a value
+texforge config name "Jheison Martinez"
+texforge config email "jheison@example.com"
+texforge config institution "University of Tech"
+texforge config language "spanish"
+```
 
 ---
 

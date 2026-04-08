@@ -49,10 +49,12 @@ enum Commands {
         #[command(subcommand)]
         action: TemplateAction,
     },
-    /// Manage global configuration (or start interactive wizard if no subcommand)
+    /// Manage global configuration
     Config {
-        #[command(subcommand)]
-        action: Option<ConfigAction>,
+        /// Key to get/set (name, email, institution, language)
+        key: Option<String>,
+        /// Value to set (optional - if omitted, shows current value)
+        value: Option<String>,
     },
 }
 
@@ -70,16 +72,6 @@ enum TemplateAction {
     Remove { name: String },
     /// Validate template compatibility
     Validate { name: String },
-}
-
-#[derive(Subcommand)]
-enum ConfigAction {
-    /// Get a config value
-    Get { key: String },
-    /// Set a config value
-    Set { key: String, value: String },
-    /// List all config values
-    List,
 }
 
 impl Cli {
@@ -103,11 +95,12 @@ impl Cli {
                 TemplateAction::Remove { name } => commands::template::remove(&name),
                 TemplateAction::Validate { name } => commands::template::validate(&name),
             },
-            Commands::Config { action } => match action {
-                Some(ConfigAction::Get { key }) => commands::config::get(&key),
-                Some(ConfigAction::Set { key, value }) => commands::config::set(&key, &value),
-                Some(ConfigAction::List) => commands::config::list(),
-                None => commands::config::wizard(),
+            Commands::Config { key, value } => match (key, value) {
+                (None, None) => commands::config::wizard(),
+                (Some(k), None) if k == "list" => commands::config::list(),
+                (Some(k), None) => commands::config::get(&k),
+                (Some(k), Some(v)) => commands::config::set(&k, &v),
+                (None, Some(_)) => anyhow::bail!("Cannot set value without a key"),
             },
         }
     }

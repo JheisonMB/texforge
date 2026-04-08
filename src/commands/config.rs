@@ -1,8 +1,14 @@
-//! Configuration commands: get, set, list, and interactive wizard
+//! Configuration commands: simple key access and interactive wizard
+//!
+//! Usage:
+//!   texforge config                      # Interactive wizard
+//!   texforge config list                 # List all settings
+//!   texforge config name                 # Show value
+//!   texforge config name "Jheison"       # Set value
 
 use crate::config;
 use anyhow::Result;
-use inquire::{Select, Text};
+use inquire::Text;
 
 const BANNER: &str = r#"
  ███████████          █████ █████ ███████████                                     
@@ -18,89 +24,144 @@ const BANNER: &str = r#"
                                                                  ░░░░░░           
 "#;
 
-/// Get a config value
+/// Get a config value by key (e.g., "name", "email", "institution", "language")
 pub fn get(key: &str) -> Result<()> {
-    match config::get(key)? {
-        Some(value) => println!("{}", value),
-        None => println!("(not set)"),
+    let config = config::load()?;
+    
+    match key {
+        "name" => {
+            if let Some(name) = &config.user.name {
+                println!("{}", name);
+            } else {
+                println!("(not set)");
+            }
+        }
+        "email" => {
+            if let Some(email) = &config.user.email {
+                println!("{}", email);
+            } else {
+                println!("(not set)");
+            }
+        }
+        "institution" => {
+            if let Some(inst) = &config.institution.name {
+                println!("{}", inst);
+            } else {
+                println!("(not set)");
+            }
+        }
+        "language" => {
+            if let Some(lang) = &config.defaults.language {
+                println!("{}", lang);
+            } else {
+                println!("(not set)");
+            }
+        }
+        _ => {
+            anyhow::bail!("Unknown config key: {}. Available: name, email, institution, language", key);
+        }
     }
+    
     Ok(())
 }
 
-/// Set a config value
+/// Set a config value by key
 pub fn set(key: &str, value: &str) -> Result<()> {
-    config::set(key, value)?;
+    let mut config = config::load()?;
+    
+    match key {
+        "name" => {
+            config.user.name = Some(value.to_string());
+        }
+        "email" => {
+            config.user.email = Some(value.to_string());
+        }
+        "institution" => {
+            config.institution.name = Some(value.to_string());
+        }
+        "language" => {
+            config.defaults.language = Some(value.to_string());
+        }
+        _ => {
+            anyhow::bail!("Unknown config key: {}. Available: name, email, institution, language", key);
+        }
+    }
+    
+    config::save(&config)?;
     println!("✓ Set {} = {}", key, value);
     Ok(())
 }
 
-/// List all config values
+/// List all configuration values
 pub fn list() -> Result<()> {
-    let values = config::list_all()?;
-
-    if values.is_empty() {
-        println!("No configuration set. Use 'texforge config set <key> <value>' to get started.");
-        return Ok(());
+    let config = config::load()?;
+    
+    println!("Global configuration:\n");
+    
+    println!("[User]");
+    if let Some(name) = &config.user.name {
+        println!("  name       = {}", name);
+    } else {
+        println!("  name       = (not set)");
     }
-
-    println!("Global configuration (~/.texforge/config.toml):\n");
-
-    let mut keys: Vec<_> = values.keys().collect();
-    keys.sort();
-
-    let mut current_section = String::new();
-    for key in keys {
-        let section = key.split('.').next().unwrap_or("");
-        if section != current_section {
-            if !current_section.is_empty() {
-                println!();
-            }
-            println!("[{}]", section);
-            current_section = section.to_string();
-        }
-
-        let value = &values[key];
-        println!("  {} = {}", key.split('.').nth(1).unwrap_or(key), value);
+    if let Some(email) = &config.user.email {
+        println!("  email      = {}", email);
+    } else {
+        println!("  email      = (not set)");
     }
-
+    
+    println!();
+    println!("[Institution]");
+    if let Some(inst) = &config.institution.name {
+        println!("  name       = {}", inst);
+    } else {
+        println!("  name       = (not set)");
+    }
+    
+    println!();
+    println!("[Defaults]");
+    if let Some(lang) = &config.defaults.language {
+        println!("  language   = {}", lang);
+    } else {
+        println!("  language   = (not set)");
+    }
+    
     Ok(())
 }
 
-/// Interactive configuration wizard
+/// Interactive configuration wizard - asks for all 4 main fields
 pub fn wizard() -> Result<()> {
     println!("{BANNER}");
     println!("Configuration Wizard\n");
-
-    loop {
-        let action = Select::new(
-            "What do you want to do?",
-            vec!["View all settings", "Set a value", "Get a value", "Exit"],
-        )
+    println!("Fill in your details to be used as placeholders in templates:\n");
+    
+    let config = config::load()?;
+    
+    let name = Text::new("Name")
+        .with_default(config.user.name.as_deref().unwrap_or(""))
         .prompt()?;
-
-        match action {
-            "View all settings" => {
-                println!();
-                list()?;
-                println!();
-            }
-            "Set a value" => {
-                let key = Text::new("Config key (e.g. build.engine)")
-                    .with_help_message("Format: section.key")
-                    .prompt()?;
-                let value = Text::new("Value").prompt()?;
-                set(&key, &value)?;
-                println!();
-            }
-            "Get a value" => {
-                let key = Text::new("Config key").prompt()?;
-                get(&key)?;
-                println!();
-            }
-            "Exit" => break,
-            _ => {}
-        }
-    }
-
+    
+    let email = Text::new("Email")
+        .with_default(config.user.email.as_deref().unwrap_or(""))
+        .prompt()?;
+    
+    let institution = Text::new("Institution")
+        .with_default(config.institution.name.as_deref().unwrap_or(""))
+        .prompt()?;
+    
+    let language = Text::new("Language (e.g. english, spanish)")
+        .with_default(config.defaults.language.as_deref().unwrap_or("english"))
+        .prompt()?;
+    
+    // Save all values
+    let mut new_config = config::load()?;
+    new_config.user.name = Some(name);
+    new_config.user.email = Some(email);
+    new_config.institution.name = Some(institution);
+    new_config.defaults.language = Some(language);
+    
+    config::save(&new_config)?;
+    
+    println!("\n✓ Configuration saved!");
     Ok(())
 }
