@@ -19,7 +19,7 @@ env:
 jobs:
   create-tag:
     name: Create Release Tag
-    if: github.event.pull_request.merged == true
+    if: github.event.pull_request.merged == true || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     outputs:
       tag: ${{ steps.version.outputs.tag }}
