@@ -21,6 +21,19 @@ Self-contained LaTeX to PDF compiler — one curl, zero friction. No TeX Live, n
 
 ---
 
+### Demos
+
+#### Uso básico del CLI
+
+![Demo CLI](assets/texforge.gif)
+
+#### Integración con agentes en OpenCode
+
+![Demo OpenCode](assets/opencode.gif)
+
+
+---
+
 ## Installation
 
 ### Quick install (recommended)

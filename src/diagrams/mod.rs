@@ -214,7 +214,13 @@ fn resolve_tex(root: &Path, input: &str) -> PathBuf {
 
 /// Convert SVG string to PNG bytes at 2x scale for print quality.
 fn svg_to_png(svg: &str) -> Result<Vec<u8>> {
-    let options = resvg::usvg::Options::default();
+    let mut options = resvg::usvg::Options::default();
+    
+    // Load system fonts for text rendering
+    let mut fontdb = resvg::usvg::fontdb::Database::new();
+    fontdb.load_system_fonts();
+    options.fontdb = std::sync::Arc::new(fontdb);
+    
     let tree = resvg::usvg::Tree::from_str(svg, &options).context("Failed to parse SVG")?;
 
     let scale = 2.0_f32;

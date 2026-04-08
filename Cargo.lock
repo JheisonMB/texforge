@@ -518,6 +518,20 @@ dependencies = [
 
 [[package]]
 name = "fontdb"
+version = "0.20.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "41f874d3f04ab8bf6f591358b03e4f1e084e396c4263a1c29ebbaa0feff7ba99"
+dependencies = [
+ "fontconfig-parser",
+ "log",
+ "memmap2",
+ "slotmap",
+ "tinyvec",
+ "ttf-parser 0.24.1",
+]
+
+[[package]]
+name = "fontdb"
 version = "0.23.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "457e789b3d1202543297a350643cf459f836cade38934e7a4cf6a39e7cde2905"
@@ -527,7 +541,7 @@ dependencies = [
  "memmap2",
  "slotmap",
  "tinyvec",
- "ttf-parser",
+ "ttf-parser 0.25.1",
 ]
 
 [[package]]
@@ -1220,14 +1234,14 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "d9588ccb8bb35fc5bca68bd896966865fa178f64a041d3bc6cacba17beaabec6"
 dependencies = [
  "anyhow",
- "fontdb",
+ "fontdb 0.23.0",
  "json5",
  "once_cell",
  "regex",
  "serde",
  "serde_json",
  "thiserror 2.0.18",
- "ttf-parser",
+ "ttf-parser 0.25.1",
 ]
 
 [[package]]
@@ -1815,7 +1829,7 @@ dependencies = [
  "core_maths",
  "log",
  "smallvec",
- "ttf-parser",
+ "ttf-parser 0.25.1",
  "unicode-bidi-mirroring",
  "unicode-ccc",
  "unicode-properties",
@@ -2137,6 +2151,7 @@ dependencies = [
  "clap",
  "dirs",
  "flate2",
+ "fontdb 0.20.0",
  "inquire",
  "layout-rs",
  "mermaid-rs-renderer",
@@ -2399,6 +2414,15 @@ checksum = "e421abadd41a4225275504ea4d6566923418b7f05506fbc9c0fe86ba7396114b"
 
 [[package]]
 name = "ttf-parser"
+version = "0.24.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "5be21190ff5d38e8b4a2d3b6a3ae57f612cc39c96e83cedeaf7abc338a8bac4a"
+dependencies = [
+ "core_maths",
+]
+
+[[package]]
+name = "ttf-parser"
 version = "0.25.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "d2df906b07856748fa3f6e0ad0cbaa047052d4a7dd609e231c4f72cee8c36f31"
@@ -2499,7 +2523,7 @@ dependencies = [
  "base64",
  "data-url",
  "flate2",
- "fontdb",
+ "fontdb 0.23.0",
  "imagesize",
  "kurbo",
  "log",
