@@ -17,13 +17,26 @@
 [![Crates.io](https://img.shields.io/crates/v/texforge)](https://crates.io/crates/texforge)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 
-Self-contained LaTeX to PDF compiler — one curl, zero friction. No TeX Live, no MiKTeX, no Perl, no Node. A single install sets up everything you need.
+Texforge is a unified LaTeX workspace — one tool for writing, rendering diagrams (Mermaid, Graphviz), and building PDFs. Set it up once and stay focused on your document.
 
 ---
 
 ### Demo CLI
 
 ![Demo CLI](assets/texforge.gif)
+
+---
+
+## Features
+
+- **🚀 One-command setup** — Install once, everything is included (LaTeX engine, templates, diagram renderers).
+- **📊 Diagrams as first-class** — Write Mermaid or Graphviz blocks in your `.tex` files; they render and embed during build.
+- **🪄 Guided workflows** — Start a new project or migrate an existing one with a guided init.
+- **🔎 Template registry** — Install, manage, and validate templates — with built-in fallback for offline work.
+- **🔨 Build and live edit** — Compile once or use watch mode; rebuild automatically as you edit.
+- **🧭 Smart linting** — Catch missing files, broken references, bibliography keys, and unclosed environments before build.
+- **✨ Format on demand** — Normalize `.tex` files with an opinionated formatter (including `--check` mode).
+- **🔄 Placeholders and config** — Reuse project details from configuration without retyping.
 
 ---
 
@@ -92,13 +105,13 @@ rm -rf ~/.texforge/           # tectonic engine + cached templates
 
 ## Skill
 
-An [texforge Skill](https://skills.sh/jheisonmb/skills/texforge) is available for AI-assisted LaTeX workflows with texforge:
+If you want Copilot to understand texforge and help with common LaTeX tasks, install the [texforge Skill](https://skills.sh/jheisonmb/skills/texforge):
 
 ```bash
 npx skills add https://github.com/jheisonmb/skills --skill texforge
 ```
 
-### Demo Agent with opencode
+### Demo with OpenCode agents
 
 ![Demo OpenCode](assets/opencode.gif)
 
@@ -367,3 +380,14 @@ texforge fmt --check   # check without modifying (CI-friendly)
 ## License
 
 MIT
+
+---
+## Support
+
+- 📖 [GitHub Issues](https://github.com/UniverLab/texforge/issues) — Report bugs or request features
+- 💬 [Discussions](https://github.com/UniverLab/texforge/discussions) — Ask questions
+- 🐦 Twitter: [@JheisonMB](https://twitter.com/JheisonMB)
+
+---
+
+Made with ❤️ by [JheisonMB](https://github.com/JheisonMB) and [UniverLab](https://github.com/UniverLab)
