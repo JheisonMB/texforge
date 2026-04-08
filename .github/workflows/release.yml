@@ -8,6 +8,7 @@ on:
       - closed
     paths:
       - Cargo.toml
+  workflow_dispatch:
 
 permissions:
   contents: write
@@ -18,7 +19,7 @@ env:
 jobs:
   create-tag:
     name: Create Release Tag
-    if: github.event.pull_request.merged == true
+    if: github.event.pull_request.merged == true || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     outputs:
       tag: ${{ steps.version.outputs.tag }}
@@ -32,7 +33,7 @@ jobs:
       - name: Get version from Cargo.toml
         id: version
         run: |
-          VERSION=$(grep '^version = ' Cargo.toml | head -1 | sed 's/version = "\(.*\)"/\1/' | tr -d '\r')
+          VERSION=$(grep '^version = ' Cargo.toml | head -1 | sed 's/version = "\(.*\)"/\1/' | tr -d '\r' | xargs)
           TAG="v${VERSION}"
           echo "version=${VERSION}" >> $GITHUB_OUTPUT
           echo "tag=${TAG}" >> $GITHUB_OUTPUT
@@ -107,7 +108,7 @@ jobs:
         if: matrix.archive == 'tar.gz'
         run: |
           cd target/${{ matrix.target }}/release
-          tar czf ../../../texforge-${{ needs.create-tag.outputs.tag }}-${{ matrix.target }}.tar.gz texforge
+          tar czf "../../../texforge-${{ needs.create-tag.outputs.tag }}-${{ matrix.target }}.tar.gz" texforge
           cd ../../..
 
       - name: Package (windows)
@@ -115,7 +116,7 @@ jobs:
         shell: pwsh
         run: |
           cd target/${{ matrix.target }}/release
-          Compress-Archive -Path texforge.exe -DestinationPath ../../../texforge-${{ needs.create-tag.outputs.tag }}-${{ matrix.target }}.zip
+          Compress-Archive -Path texforge.exe -DestinationPath "../../../texforge-${{ needs.create-tag.outputs.tag }}-${{ matrix.target }}.zip"
           cd ../../..
 
       - name: Upload artifact
@@ -154,9 +155,10 @@ jobs:
       - name: Approval granted
         run: echo "Release approved for publishing to crates.io"
 
-  publish:
-    name: Publish to crates.io
-    needs: [create-tag, approve]
+  ensure-owners:
+    name: Ensure crates.io owners
+    needs: create-tag
+    if: needs.create-tag.outputs.created == 'true'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -166,5 +168,53 @@ jobs:
       - name: Install Rust toolchain
         uses: dtolnay/rust-toolchain@stable
 
+      - name: Add crates.io owners (best-effort)
+        env:
+          TOKEN: ${{ secrets.CARGO_REGISTRY_TOKEN }}
+          OWNERS: github:univerlab:owners
+        run: |
+          set -eu
+          if [ -z "$TOKEN" ]; then
+            echo "No cargo token found in CARGO_REGISTRY_TOKEN; skipping owners update"
+            exit 0
+          fi
+          CRATE_NAME=$(grep '^name = ' Cargo.toml | head -1 | sed 's/.*"\(.*\)".*/\1/' | tr -d '\r')
+          echo "crate=$CRATE_NAME"
+          for owner in $(echo "$OWNERS" | tr ',' ' '); do
+            echo "Adding owner: $owner"
+            cargo owner --token "$TOKEN" --add "$owner" || echo "cargo owner failed for $owner (continuing)"
+          done
+
+  publish:
+    name: Publish to crates.io
+    needs: [create-tag, approve, ensure-owners]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.create-tag.outputs.tag }}
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Check if stable release
+        id: version_check
+        run: |
+          VERSION=$(grep '^version = ' Cargo.toml | head -1 | sed 's/.*"\(.*\)".*/\1/' | xargs)
+          if [[ "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "is_stable=true" >> $GITHUB_OUTPUT
+            echo "Version $VERSION is stable — will publish"
+          else
+            echo "is_stable=false" >> $GITHUB_OUTPUT
+            echo "Version $VERSION is prerelease/dev — skipping publish"
+          fi
+
       - name: Cargo publish
-        run: cargo publish --token ${{ secrets.CARGO_TOKEN }}
+        if: steps.version_check.outputs.is_stable == 'true'
+        env:
+          CARGO_REGISTRY_TOKEN: ${{ secrets.CARGO_REGISTRY_TOKEN }}
+        run: cargo publish --allow-dirty
+
+      - name: Skipped prerelease
+        if: steps.version_check.outputs.is_stable == 'false'
+        run: echo "⏭️ Skipped crates.io publish for prerelease version"
