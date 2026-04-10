@@ -12,10 +12,12 @@
                                                                  ░░░░░░           
 ```
 
-[![CI](https://github.com/UniverLab/texforge/actions/workflows/ci.yml/badge.svg)](https://github.com/UniverLab/texforge/actions/workflows/ci.yml)
-[![Release](https://github.com/UniverLab/texforge/actions/workflows/release.yml/badge.svg)](https://github.com/UniverLab/texforge/actions/workflows/release.yml)
-[![Crates.io](https://img.shields.io/crates/v/texforge)](https://crates.io/crates/texforge)
-[![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+<p align="center">
+  <a href="https://github.com/UniverLab/texforge/actions/workflows/ci.yml"><img src="https://img.shields.io/github/actions/workflow/status/UniverLab/texforge/ci.yml?branch=main&style=for-the-badge&label=CI" alt="CI"/></a>
+  <a href="https://crates.io/crates/texforge"><img src="https://img.shields.io/crates/v/texforge?style=for-the-badge&logo=rust&logoColor=white" alt="Crates.io"/></a>
+  <img src="https://img.shields.io/badge/Status-Active-27AE60?style=for-the-badge" alt="Status"/>
+  <a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-2E8B57?style=for-the-badge" alt="License"/></a>
+</p>
 
 Texforge is a unified LaTeX workspace — one tool for writing, rendering diagrams (Mermaid, Graphviz), and building PDFs. Set it up once and stay focused on your document.
 
@@ -380,13 +382,6 @@ texforge fmt --check   # check without modifying (CI-friendly)
 ## License
 
 MIT
-
----
-## Support
-
-- 📖 [GitHub Issues](https://github.com/UniverLab/texforge/issues) — Report bugs or request features
-- 💬 [Discussions](https://github.com/UniverLab/texforge/discussions) — Ask questions
-- 🐦 Twitter: [@JheisonMB](https://twitter.com/JheisonMB)
 
 ---
 
